@@ -4,6 +4,7 @@ import studySpher from "../assets/studySpher.jpeg";
 import { useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import API_URL from "../Api";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -15,7 +16,7 @@ export function Header() {
       const checkUser = async () => {
         try {
           const res = await axios.get(
-            "http://localhost:7000/api/register/details",
+            `${API_URL}/api/register/details`,
             {
               withCredentials: true,
             }

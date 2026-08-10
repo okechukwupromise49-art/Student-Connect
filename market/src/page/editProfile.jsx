@@ -4,6 +4,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import studySpher from "../assets/studySpher.jpeg";
+import API_URL from "../Api";
 
 export function EditProfile() {
   const [formData, setFormData] = useState({
@@ -25,7 +26,7 @@ export function EditProfile() {
     const fetchUser = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:7000/api/register/details",
+          `${API_URL}/api/register/details`,
           { withCredentials: true }
         );
         setUser(res.data);
@@ -80,7 +81,7 @@ export function EditProfile() {
       }
 
       const res = await axios.put(
-        "http://localhost:7000/api/register/editProfile",
+        `${API_URL}/api/register/editProfile`,
         data,
         {
           withCredentials: true,

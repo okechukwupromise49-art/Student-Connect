@@ -14,6 +14,7 @@ import {
   MessageCircle
 } from "lucide-react";
 import axios from "axios";
+import API_URL from "../Api";
 
 export default function Profile() {
   const { id } = useParams();
@@ -33,7 +34,7 @@ export default function Profile() {
       try {
         setLoading(true);
         const res = await axios.get(
-          `http://localhost:7000/api/register/profile/${id}`
+          `${API_URL}/api/register/profile/${id}`
         );
         setUser(res.data);
       } catch (err) {
@@ -51,7 +52,7 @@ export default function Profile() {
     const fetchCurrentUser = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:7000/api/register/details",
+         `${API_URL}/api/register/details`,
           { withCredentials: true }
         );
         setCurrentUser(res.data);

@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import axios from "axios";
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API_URL from '../Api';
 
 export function Welcome() {
 
@@ -17,7 +18,7 @@ export function Welcome() {
     const checkUser = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:7000/api/register/details",
+          `${API_URL}/api/register/details`,
           {
             withCredentials: true,
           }

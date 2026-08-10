@@ -25,7 +25,7 @@ mongoose
  app.use(express.json());
   app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", 'https://student-connect-eta.vercel.app'],
     credentials: true,
   })
 );

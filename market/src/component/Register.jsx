@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { toast } from "react-toastify";
+import API_URL from "../Api";
 
 export  function Register() {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export  function Register() {
 
   try {
     const response = await axios.post(
-      "http://localhost:7000/api/register/register",
+      `${API_URL}/api/register/register`,
       formData,
       {
         withCredentials: true,
@@ -65,7 +66,7 @@ export  function Register() {
 useEffect(() => {
   const checkUser = async () => {
     try {
-      const res = await fetch("http://localhost:7000/api/register/details", {
+      const res = await fetch(`${API_URL}/api/register/details`, {
         credentials: "include"
       });
 

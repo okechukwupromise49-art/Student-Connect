@@ -45,7 +45,7 @@ export function Footer() {
       const checkUser = async () => {
         try {
           const res = await axios.get(
-            "http://localhost:7000/api/register/details",
+            `${API_URL}/api/register/details`,
             {
               withCredentials: true,
             }

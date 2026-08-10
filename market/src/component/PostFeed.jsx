@@ -9,6 +9,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import studySpher from "../assets/studySpher.jpeg";
 import { toast } from "react-toastify";
+import API_URL from "../Api";
 
 export default function PostFeed() {
   const [posts, setPosts] = useState([]);
@@ -26,7 +27,7 @@ export default function PostFeed() {
   const handleLike = async (id) => {
       try {
         const res = await axios.post(
-          `http://localhost:7000/api/posts/${id}/like`,
+          `${API_URL}/api/posts/${id}/like`,
           {},
           {
             withCredentials: true,
@@ -78,7 +79,7 @@ const handleSubmitComment = async (id) => {
     setSubmitting(true);
 
     const res = await axios.post(
-      `http://localhost:7000/api/posts/comment/${id}`,
+      `${API_URL}/api/posts/comment/${id}`,
       { comment: comment.trim() },
       { withCredentials: true }
     );
@@ -121,7 +122,7 @@ const handleSubmitComment = async (id) => {
       try {
         // Get logged-in user
         const userRes = await axios.get(
-          "http://localhost:7000/api/register/details",
+          `${API_URL}/api/register/details`,
           {
             withCredentials: true,
           }
@@ -131,7 +132,7 @@ const handleSubmitComment = async (id) => {
 
         // Get posts
         const postRes = await axios.get(
-          "http://localhost:7000/api/posts/display",
+          `${API_URL}/api/posts/display`,
           {
             withCredentials: true,
           }

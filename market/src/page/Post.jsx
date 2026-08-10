@@ -10,6 +10,7 @@ import {
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import API_URL from "../Api";
 
 export default function CreatePost() {
   const [content, setContent] = useState("");
@@ -69,7 +70,7 @@ export default function CreatePost() {
       });
 
       const res = await axios.post(
-        "http://localhost:7000/api/posts/create",
+        `${API_URL}/api/posts/create`,
         formData,
         {
           withCredentials: true,
