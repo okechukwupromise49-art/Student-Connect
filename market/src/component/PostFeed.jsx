@@ -444,7 +444,8 @@ const handleSubmitComment = async (id) => {
           LOAD MORE
       =============================== */}
       <div className="flex justify-center mt-8">
-        <button className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-medium hover:bg-indigo-700 transition-colors">
+        <button className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-medium hover:bg-indigo-700 transition-colors"
+          onClick={() => window.location.reload()}>
           Load More Posts
         </button>
       </div>
