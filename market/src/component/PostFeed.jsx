@@ -18,6 +18,8 @@ export default function PostFeed() {
   const [commentClick, setCommentClick] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [postMenu, setPostMenu] = useState(null);
+ const isOwner =
+  post.author.toString() === req.user.id.toString();
 
 
   const navigate = useNavigate();
@@ -264,22 +266,31 @@ const handleSubmitComment = async (id) => {
                       Save
                     </button>
 
-                    <button
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
-                      onClick={() => {
-                        console.log("Edit:", post._id);
-                        setPostMenu(null);
-                      }}
-                    >
-                      Edit
-                    </button>
+                    {isOwner && 
 
-                    <button
-                      className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50"
-                      onClick={() => handleDelete(post._id)}
-                    >
-                      Delete
-                    </button>
+                      <div>
+
+                            <button
+                              className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
+                              onClick={() => {
+                                console.log("Edit:", post._id);
+                                setPostMenu(null);
+                              }}
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+                              onClick={() => handleDelete(post._id)}
+                            >
+                              Delete
+                            </button>
+                      </div>
+
+                    }
+
+                    
 
                   </div>
                 )}
