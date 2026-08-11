@@ -18,12 +18,10 @@ export default function PostFeed() {
   const [comment, setComment] = useState("");
   const [commentClick, setCommentClick] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-
   const [postMenu, setPostMenu] = useState(null);
 
   // Stores the ID of the post whose files are open
   const [isModalOpen, setIsModalOpen] = useState(null);
-
   const navigate = useNavigate();
 
   // =====================================================
@@ -81,7 +79,6 @@ export default function PostFeed() {
 
     try {
       setSubmitting(true);
-
       const res = await axios.post(
         `${API_URL}/api/posts/comment/${id}`,
         {
@@ -188,9 +185,6 @@ export default function PostFeed() {
         );
 
         setPosts(postRes.data);
-
-        console.log("User:", userRes.data);
-        console.log("Posts:", postRes.data);
       } catch (error) {
         console.log(
           "Fetch error:",
@@ -639,7 +633,7 @@ export default function PostFeed() {
         >
 
           <div
-            className="relative bg-white rounded-2xl p-2 max-w-4xl w-full max-h-[90vh] overflow-auto"
+            className="relative bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) =>
               e.stopPropagation()
             }
