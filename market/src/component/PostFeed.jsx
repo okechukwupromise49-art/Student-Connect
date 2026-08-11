@@ -25,6 +25,8 @@ export default function PostFeed() {
   const [isModalOpen, setIsModalOpen] = useState(null);
   const navigate = useNavigate();
 
+  const [commentMenu, setCommentMenu] = useState([])
+
   // =====================================================
   // LIKE POST
   // =====================================================
@@ -684,7 +686,7 @@ export default function PostFeed() {
             {/* CLOSE BUTTON */}
             <button 
                 onClick={() => setIsModalOpen(null)} 
-                className="flex items-center gap-2 mb-4 px-4 py-2 rounded-xl text-black hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium" 
+                className="flex bg-gray-400 items-center gap-2 mb-4 px-4 py-2 rounded-xl text-black hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium" 
                 > 
                 <ArrowLeft size={20} />
                  Back
