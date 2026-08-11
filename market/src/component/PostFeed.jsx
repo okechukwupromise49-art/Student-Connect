@@ -639,7 +639,7 @@ export default function PostFeed() {
         >
 
           <div
-            className="relative bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto"
+            className="relative bg-white rounded-2xl p-2 max-w-4xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) =>
               e.stopPropagation()
             }
