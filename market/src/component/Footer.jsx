@@ -25,6 +25,11 @@ export function Footer() {
       path: "/connect" 
     },
     { 
+      icon: MessageChannel, 
+      label: "Meassage", 
+      path: `/message` 
+    },
+    { 
       icon: Users2, 
       label: "Groups", 
       path: "/groups" 
@@ -34,11 +39,7 @@ export function Footer() {
       label: "Market", 
       path: "/market" 
     },
-    { 
-      icon: User, 
-      label: "Profile", 
-      path: `${user?._id} && /profile/${user._id}` 
-    },
+    
   ];
 
   useEffect(() => {
