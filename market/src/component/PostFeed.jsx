@@ -109,6 +109,13 @@ const handleSubmitComment = async (id) => {
 };
 
 
+  const handleDelete = (id) => {
+
+      console.log("Delete:", post._id);
+      setPostMenu(null);
+    }
+
+
   // ===============================
   // FETCH USER AND POSTS
   // ===============================
@@ -146,6 +153,9 @@ const handleSubmitComment = async (id) => {
 
     fetchData();
   }, []);
+
+
+  
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -240,10 +250,7 @@ const handleSubmitComment = async (id) => {
 
                     <button
                       className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50"
-                      onClick={() => {
-                        console.log("Delete:", post._id);
-                        setPostMenu(null);
-                      }}
+                      onClick={() => handleDelete(post._id)}
                     >
                       Delete
                     </button>
