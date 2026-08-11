@@ -295,4 +295,74 @@ router.post("/comment/:id", auth, async (req, res) => {
   }
 });
 
+router.delete("/:postId", auth, async (req, res) => {
+  try {
+    // 1. Find the post
+    const post = await Post.findById(req.params.postId);
+
+    // 2. Check if post exists
+    if (!post) {
+      return res.status(404).json({
+        message: "Post not found",
+      });
+    }
+
+    // 3. Check that the logged-in user owns the post
+    if (post.author.toString() !== req.user.id.toString()) {
+      return res.status(403).json({
+        message: "You are not allowed to delete this post",
+      });
+    }
+
+    // 4. Delete files from Supabase
+    if (post.files && post.files.length > 0) {
+      for (const file of post.files) {
+        try {
+          // Get the file path from the URL
+          const url = new URL(file.url);
+          const pathParts = url.pathname.split("/post-files/");
+
+          if (pathParts[1]) {
+            const filePath = decodeURIComponent(pathParts[1]);
+
+            const { error } = await supabase.storage
+              .from("post-files")
+              .remove([filePath]);
+
+            if (error) {
+              console.log(
+                "Supabase delete error:",
+                error.message
+              );
+            }
+          }
+        } catch (fileError) {
+          console.log(
+            "Could not delete file:",
+            fileError.message
+          );
+        }
+      }
+    }
+
+    // 5. Delete post from MongoDB
+    await post.deleteOne();
+
+    // 6. Send response
+    res.status(200).json({
+      message: "Post deleted successfully",
+      postId: req.params.postId,
+    });
+
+  } catch (error) {
+    console.error("Delete post error:", error);
+
+    res.status(500).json({
+      message: "Failed to delete post",
+      error: error.message,
+    });
+  }
+});
+
+
 module.exports = router;

@@ -109,11 +109,37 @@ const handleSubmitComment = async (id) => {
 };
 
 
-  const handleDelete = () => {
+  const handleDelete = async (postId) => {
+  try {
+    await axios.delete(
+      `${API_URL}/api/posts/${postId}`,
+      {
+        withCredentials: true,
+      }
+    );
 
-      
-      setPostMenu(null);
-    }
+    setPosts((prevPosts) =>
+      prevPosts.filter((post) => post._id !== postId)
+    );
+
+    setPostMenu(null);
+
+    toast.success("Post deleted successfully");
+
+  } catch (error) {
+    console.log(
+      "Delete error:",
+      error.response?.data || error.message
+    );
+
+    toast.error(
+      error.response?.data?.message ||
+      "Failed to delete post"
+    );
+  }
+};
+
+    
 
 
   // ===============================
