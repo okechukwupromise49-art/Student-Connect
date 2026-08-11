@@ -17,7 +17,7 @@ export default function PostFeed() {
   const [comment, setComment] = useState("");
   const [commentClick, setCommentClick] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [postMenu, setPostMenu] = useState(false);
+  const [postMenu, setPostMenu] = useState(null);
 
 
   const navigate = useNavigate();
@@ -203,18 +203,50 @@ const handleSubmitComment = async (id) => {
                 </div>
               </div>
 
-              <button className="text-gray-400 hover:text-gray-600"
-                onClick={() => setPostMenu((prev) => !prev)}>
+              <button
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() =>
+                  setPostMenu((prev) =>
+                    prev === post._id ? null : post._id
+                  )
+                }
+              >
                 ⋮
               </button>
 
-              {postMenu && 
-                <div>
-                  <p>Save</p>
-                  <p>Edit</p>
-                  <p>Delete</p>
+              {postMenu === post._id && (
+                <div className="absolute right-5 top-14 z-50 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+                  <button
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => {
+                      console.log("Save:", post._id);
+                      setPostMenu(null);
+                    }}
+                  >
+                    Save
+                  </button>
+
+                  <button
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => {
+                      console.log("Edit:", post._id);
+                      setPostMenu(null);
+                    }}
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+                    onClick={() => {
+                      console.log("Delete:", post._id);
+                      setPostMenu(null);
+                    }}
+                  >
+                    Delete
+                  </button>
                 </div>
-              }
+              )}
 
             </div>
 
