@@ -18,6 +18,7 @@ export default function PostFeed() {
   const [commentClick, setCommentClick] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [postMenu, setPostMenu] = useState(null);
+  const [isModalOpen,setIsModalOpen] = useState(null)
 
 
 
@@ -315,6 +316,7 @@ const handleSubmitComment = async (id) => {
                 <div
                   key={index}
                   className="mb-3"
+                  onClick={() => setIsModalOpen(true)}
                 >
 
                   {/* IMAGE */}
@@ -496,3 +498,71 @@ const handleSubmitComment = async (id) => {
     </div>
   );
 }
+
+
+ { isModalOpen === post._id && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl">
+
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="mt-4 w-full py-2 bg-indigo-600 text-white rounded-xl"
+            >
+              X
+            </button>
+            
+            {post.files?.map((file, index) => (
+                <div
+                  key={index}
+                  className="mb-3"
+                  onClick={() => setIsModalOpen(true)}
+                >
+
+                  {/* IMAGE */}
+                  {file.type === "image" && (
+                    <img
+                      src={file.url}
+                      alt={
+                        file.name ||
+                        "Post image"
+                      }
+                      className="rounded-2xl w-full object-cover max-h-[420px]"
+                    />
+                  )}
+
+                  {/* VIDEO */}
+                  {file.type === "video" && (
+                    <video
+                      src={file.url}
+                      controls
+                      className="rounded-2xl w-full max-h-[420px]"
+                    />
+                  )}
+
+                  {/* PDF */}
+                  {file.type === "pdf" && (
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-4 bg-indigo-50 rounded-xl text-indigo-600 font-medium"
+                    >
+                      <span className="text-2xl">
+                        📄
+                      </span>
+
+                      <span>
+                        {file.name ||
+                          "View PDF"}
+                      </span>
+                    </a>
+                  )}
+
+                </div>
+              ))}
+
+            
+
+          </div>
+        </div>
+      )}
