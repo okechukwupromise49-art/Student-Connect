@@ -509,14 +509,53 @@ export default function PostFeed() {
           </p>
 
           {/* Three dots */}
-          <button
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-black hover:text-green-700 px-2"
-            onClick={() => {
-              console.log("Comment menu:", c._id);
-            }}
-          >
-            ⋮
-          </button>
+          <div className="relative">
+
+  <button
+    className="
+      opacity-0 group-hover:opacity-100
+      transition-opacity
+      w-8 h-8 rounded-full
+      hover:bg-gray-100
+      text-gray-500 hover:text-gray-800
+    "
+    onClick={() =>
+      setCommentMenu((prev) =>
+        prev === c._id ? null : c._id
+      )
+    }
+  >
+    ⋮
+  </button>
+
+  {/* Comment menu */}
+  {commentMenu === c._id && (
+    <div className="absolute right-0 top-full mt-1 z-50 w-32 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+
+      <button
+        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+        onClick={() => {
+          console.log("Edit comment:", c._id);
+          setCommentMenu(null);
+        }}
+      >
+        Edit
+      </button>
+
+      <button
+        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+        onClick={() => {
+          console.log("Delete comment:", c._id);
+          setCommentMenu(null);
+        }}
+      >
+        Delete
+      </button>
+
+    </div>
+  )}
+
+</div>
 
         </div>
 
