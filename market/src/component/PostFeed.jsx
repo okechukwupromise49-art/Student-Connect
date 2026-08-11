@@ -510,7 +510,7 @@ export default function PostFeed() {
 
           {/* Three dots */}
           <button
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-700 px-2"
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-800 hover:text-blue-700 px-2"
             onClick={() => {
               console.log("Comment menu:", c._id);
             }}
