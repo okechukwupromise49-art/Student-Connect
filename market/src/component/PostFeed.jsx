@@ -510,7 +510,7 @@ export default function PostFeed() {
 
           {/* Three dots */}
           <button
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-800 hover:text-blue-700 px-2"
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-black hover:text-green-700 px-2"
             onClick={() => {
               console.log("Comment menu:", c._id);
             }}
@@ -645,7 +645,7 @@ export default function PostFeed() {
             {/* CLOSE BUTTON */}
             <button 
                 onClick={() => setIsModalOpen(null)} 
-                className="flex items-center gap-2 mb-4 px-4 py-2 rounded-xl text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium" 
+                className="flex items-center gap-2 mb-4 px-4 py-2 rounded-xl text-black hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium" 
                 > 
                 <ArrowLeft size={20} />
                  Back
