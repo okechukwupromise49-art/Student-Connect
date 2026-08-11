@@ -37,7 +37,7 @@ export function Footer() {
     { 
       icon: User, 
       label: "Profile", 
-      path: `/profile/${user._id}` 
+      path: `${user?._id} && /profile/${user._id}` 
     },
   ];
 

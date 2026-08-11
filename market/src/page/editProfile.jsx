@@ -109,7 +109,7 @@ export function EditProfile() {
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
           <button
-            onClick={() => navigate(`/profile/${user._id}`)}
+            onClick={() => navigate(-1)}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X size={22} />

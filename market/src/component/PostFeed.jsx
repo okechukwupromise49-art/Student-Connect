@@ -644,9 +644,9 @@ export default function PostFeed() {
               onClick={() =>
                 setIsModalOpen(null)
               }
-              className="absolute top-3 right-3 z-10 w-10 h-10  hover:text-red-400 rounded-full text-gray-700 font-bold"
+              className="absolute hover:bg-gray-200 top-3 right-3 z-10 w-10 h-10  hover:text-red-400 rounded-full text-gray-700 font-bold"
             >
-              X
+              <X size={22} />
             </button>
 
             {/* FILES */}
