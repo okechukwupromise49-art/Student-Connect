@@ -4,7 +4,8 @@ import {
   Users, 
   Users2, 
   ShoppingBag, 
-  User 
+  User, 
+  MessageCircle
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -25,7 +26,7 @@ export function Footer() {
       path: "/connect" 
     },
     { 
-      icon: MessageChannel, 
+      icon: MessageCircle, 
       label: "Meassage", 
       path: `/message` 
     },
