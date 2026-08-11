@@ -18,8 +18,7 @@ export default function PostFeed() {
   const [commentClick, setCommentClick] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [postMenu, setPostMenu] = useState(null);
- const isOwner =
-  post.author.toString() === req.user.id.toString();
+
 
 
   const navigate = useNavigate();
@@ -266,7 +265,7 @@ const handleSubmitComment = async (id) => {
                       Save
                     </button>
 
-                    {isOwner && 
+                    {post.author?._id?.toString() === user?._id?.toString() && 
 
                       <div>
 
