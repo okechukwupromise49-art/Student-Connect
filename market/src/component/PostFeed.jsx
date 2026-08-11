@@ -511,20 +511,29 @@ export default function PostFeed() {
 
                             <div className="bg-white px-4 py-2.5 rounded-2xl shadow-sm flex-1">
 
-                              <p className="text-sm font-semibold text-gray-800">
-                                {c.user
-                                  ?.full_name ||
-                                  "Unknown"}
-                              </p>
-                          <div className="flex justify-betweeen">
+                               {/* Name + three dots */}
+        <div className="flex items-center justify-between">
 
-                            <p className="text-sm text-gray-600 mt-0.5">
+          <p className="text-sm font-semibold text-gray-800">
+            {c.user?.full_name || "Unknown"}
+          </p>
+
+          {/* Three dots */}
+          <button
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-700 px-2"
+            onClick={() => {
+              console.log("Comment menu:", c._id);
+            }}
+          >
+            ⋮
+          </button>
+
+        </div>
+
+                              <p className="text-sm text-gray-600 mt-0.5">
                                 {c.text}
                               </p>
 
-                              <span>:</span>
-
-                          </div>
                               
 
                               <p className="text-xs text-gray-400 mt-1">
