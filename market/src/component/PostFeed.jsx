@@ -486,32 +486,22 @@ export default function PostFeed() {
                   <div className="space-y-4 mb-5 max-h-64 overflow-y-auto">
 
                     {post.comments?.length > 0 ? (
-                      post.comments.map(
-                        (c, index) => (
-                          <div
-                            key={
-                              c._id || index
-                            }
-                            className="flex gap-3"
-                          >
+  post.comments.map((c, index) => (
+    <div
+      key={c._id || index}
+      className="flex gap-3 group"
+    >
+      {/* Commenter's image */}
+      <img
+        src={c.user?.profileImage || studySpher}
+        alt={c.user?.full_name || "User"}
+        className="w-8 h-8 rounded-full object-cover"
+      />
 
-                            <img
-                              src={
-                                c.user
-                                  ?.profileImage ||
-                                studySpher
-                              }
-                              alt={
-                                c.user
-                                  ?.full_name ||
-                                "User"
-                              }
-                              className="w-8 h-8 rounded-full object-cover"
-                            />
+      {/* Comment */}
+      <div className="bg-white px-4 py-2.5 rounded-2xl shadow-sm flex-1">
 
-                            <div className="bg-white px-4 py-2.5 rounded-2xl shadow-sm flex-1">
-
-                               {/* Name + three dots */}
+        {/* Name + three dots */}
         <div className="flex items-center justify-between">
 
           <p className="text-sm font-semibold text-gray-800">
@@ -530,29 +520,26 @@ export default function PostFeed() {
 
         </div>
 
-                              <p className="text-sm text-gray-600 mt-0.5">
-                                {c.text}
-                              </p>
+        {/* Comment text */}
+        <p className="text-sm text-gray-600 mt-0.5">
+          {c.text}
+        </p>
 
-                              
+        {/* Date */}
+        <p className="text-xs text-gray-400 mt-1">
+          {c.createdAt
+            ? new Date(c.createdAt).toLocaleString()
+            : ""}
+        </p>
 
-                              <p className="text-xs text-gray-400 mt-1">
-                                {c.createdAt
-                                  ? new Date(
-                                      c.createdAt
-                                    ).toLocaleString()
-                                  : ""}
-                              </p>
-
-                            </div>
-                          </div>
-                        )
-                      )
-                    ) : (
-                      <p className="text-sm text-gray-400 text-center py-3">
-                        No comments yet. Be the first!
-                      </p>
-                    )}
+      </div>
+    </div>
+  ))
+) : (
+  <p className="text-sm text-gray-400 text-center py-3">
+    No comments yet. Be the first!
+  </p>
+)}
                   </div>
 
                   {/* ADD COMMENT */}
