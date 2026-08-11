@@ -633,7 +633,7 @@ export default function PostFeed() {
         >
 
           <div
-            className="relative bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto"
+            className="relative  rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) =>
               e.stopPropagation()
             }
@@ -644,7 +644,7 @@ export default function PostFeed() {
               onClick={() =>
                 setIsModalOpen(null)
               }
-              className="absolute top-3 right-3 z-10 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700 font-bold"
+              className="absolute top-3 right-3 z-10 w-10 h-10  hover:text-red-400 rounded-full text-gray-700 font-bold"
             >
               X
             </button>
