@@ -111,7 +111,7 @@ const handleSubmitComment = async (id) => {
 
   const handleDelete = (id) => {
 
-      console.log("Delete:", post._id);
+      console.log("Delete:", id);
       setPostMenu(null);
     }
 
