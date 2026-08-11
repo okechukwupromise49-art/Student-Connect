@@ -5,6 +5,7 @@ import {
   Share2,
   Bookmark,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -641,14 +642,14 @@ export default function PostFeed() {
           >
 
             {/* CLOSE BUTTON */}
-            <button
-              onClick={() =>
-                setIsModalOpen(null)
-              }
-              className="absolute hover:bg-gray-200 top-3 right-3 z-10 w-10 h-10  hover:text-red-400 rounded-full text-gray-700 font-bold"
-            >
-              <X size={22} />
-            </button>
+            <button 
+                onClick={() => setIsModalOpen(null)} 
+                className="flex items-center gap-2 mb-4 px-4 py-2 rounded-xl text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium" 
+                > 
+                <ArrowLeft size={20} />
+                 Back
+                 
+             </button>
 
             {/* FILES */}
             {selectedPost.files?.map(
