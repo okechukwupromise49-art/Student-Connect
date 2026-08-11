@@ -17,6 +17,7 @@ export default function PostFeed() {
   const [comment, setComment] = useState("");
   const [commentClick, setCommentClick] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [postMenu, setPostMenu] = useState(false);
 
 
   const navigate = useNavigate();
@@ -65,19 +66,15 @@ export default function PostFeed() {
 // ===============================
 // SUBMIT COMMENT
 // ===============================
-
-
 const handleComment = (id) => {
   setCommentClick((prev) => (prev === id ? null : id));
 };
-
 
 const handleSubmitComment = async (id) => {
   if (!comment.trim()) return;
 
   try {
     setSubmitting(true);
-
     const res = await axios.post(
       `${API_URL}/api/posts/comment/${id}`,
       { comment: comment.trim() },
@@ -101,8 +98,6 @@ const handleSubmitComment = async (id) => {
     );
 
     toast.success("Comment successfully added")
-
-    
 
     setComment(""); // clear input
   } catch (error) {
@@ -208,9 +203,18 @@ const handleSubmitComment = async (id) => {
                 </div>
               </div>
 
-              <button className="text-gray-400 hover:text-gray-600">
+              <button className="text-gray-400 hover:text-gray-600"
+                onClick={() => setPostMenu((prev) => !prev)}>
                 ⋮
               </button>
+
+              {postMenu && 
+                <div>
+                  <p>Save</p>
+                  <p>Edit</p>
+                  <p>Delete</p>
+                </div>
+              }
 
             </div>
 
