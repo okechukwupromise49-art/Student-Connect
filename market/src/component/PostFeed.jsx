@@ -4,7 +4,6 @@ import {
   MessageCircle,
   Share2,
   Bookmark,
-  X,
   ArrowLeft,
 } from "lucide-react";
 import axios from "axios";
@@ -517,10 +516,16 @@ export default function PostFeed() {
                                   ?.full_name ||
                                   "Unknown"}
                               </p>
+                          <div className="flex justify-betweeen">
 
-                              <p className="text-sm text-gray-600 mt-0.5">
+                            <p className="text-sm text-gray-600 mt-0.5">
                                 {c.text}
                               </p>
+
+                              <span>:</span>
+
+                          </div>
+                              
 
                               <p className="text-xs text-gray-400 mt-1">
                                 {c.createdAt
