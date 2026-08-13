@@ -159,6 +159,49 @@ export default function PostFeed() {
     }
   };
 
+
+  const handleDeleteComment = async (postId, commentId) => {
+  try {
+    await axios.delete(
+      `${API_URL}/api/posts/${postId}/comment/${commentId}`,
+      {
+        withCredentials: true,
+      }
+    );
+
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post._id === postId
+          ? {
+              ...post,
+              comments: post.comments.filter(
+                (c) => c._id !== commentId
+              ),
+            }
+          : post
+      )
+    );
+
+    // Close comment menu
+    setCommentMenu((prev) =>
+      prev.filter((id) => id !== commentId)
+    );
+
+    toast.success("Comment deleted successfully");
+
+  } catch (error) {
+    console.error(
+      "Delete comment error:",
+      error.response?.data || error.message
+    );
+
+    toast.error(
+      error.response?.data?.message ||
+      "Failed to delete comment"
+    );
+  }
+};
+
   // =====================================================
   // FETCH USER + POSTS
   // =====================================================
@@ -545,13 +588,13 @@ export default function PostFeed() {
       </button>
 
       <button
-        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
-        onClick={() => {
-          console.log("Delete comment:", c._id);
-          setCommentMenu(null);
-        }}
+        onClick={() =>
+          handleDeleteComment(post._id, c._id)
+        }
+        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
       >
-        Delete
+        🗑️
+        <span>Delete</span>
       </button>
 
     </div>
