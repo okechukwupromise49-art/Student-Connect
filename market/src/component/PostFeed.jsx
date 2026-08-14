@@ -77,53 +77,62 @@ export default function PostFeed() {
   // =====================================================
   // SUBMIT COMMENT
   // =====================================================
-  const handleSubmitComment = async (id) => {
-    if (!comment.trim()) return;
+  const handleSubmitComment = async (id, commentText = comment) => {
+  if (!commentText || !commentText.trim()) return;
 
-    try {
-      setSubmitting(true);
-      const res = await axios.post(
-        `${API_URL}/api/posts/comment/${id}`,
-        {
-          comment: comment.trim(),
-        },
-        {
-          withCredentials: true,
-        }
-      );
+  try {
+    setSubmitting(true);
 
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post._id === id
-            ? {
-                ...post,
-                comments: [
-                  ...(post.comments || []),
-                  res.data.comment,
-                ],
-                commentsCount: res.data.commentsCount,
-              }
-            : post
-        )
-      );
+    const res = await axios.post(
+      `${API_URL}/api/posts/comment/${id}`,
+      {
+        comment: commentText.trim(),
+      },
+      {
+        withCredentials: true,
+      }
+    );
 
-      setComment("");
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post._id === id
+          ? {
+              ...post,
 
-      toast.success("Comment successfully added");
-    } catch (error) {
-      console.log(
-        "Comment error:",
-        error.response?.data || error.message
-      );
+              comments: [
+                ...(post.comments || []),
+                res.data.comment,
+              ],
 
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to post comment"
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
+              commentsCount:
+                res.data.commentsCount,
+            }
+          : post
+      )
+    );
+
+    setComment("");
+
+    toast.success(
+      "Comment successfully added"
+    );
+
+  } catch (error) {
+    console.log(
+      "Comment error:",
+      error.response?.data ||
+      error.message
+    );
+
+    toast.error(
+      error.response?.data?.message ||
+      "Failed to post comment"
+    );
+
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   // =====================================================
   // DELETE POST
@@ -741,7 +750,7 @@ const handleShareComment = async (postId, comment) => {
                                 e.key === "Enter"
                               ) {
                                 handleSubmitComment(
-                                  post._id
+                                  post._id, comment
                                 );
                               }
                             }}
@@ -750,7 +759,7 @@ const handleShareComment = async (postId, comment) => {
                           <button
                             onClick={() =>
                               handleSubmitComment(
-                                post._id
+                                post._id, comment
                               )
                             }
                             disabled={
