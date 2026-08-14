@@ -529,180 +529,210 @@ export default function PostFeed() {
                   <div className="space-y-4 mb-5 max-h-64 overflow-y-auto">
 
                     {post.comments?.length > 0 ? (
-  post.comments.map((c, index) => (
-    <div
-      key={c._id || index}
-      className="flex gap-3 group"
-    >
-      {/* Commenter's image */}
-      <img
-        src={c.user?.profileImage || studySpher}
-        alt={c.user?.full_name || "User"}
-        className="w-8 h-8 rounded-full object-cover"
-      />
+      post.comments.map((c, index) => (
+        <div
+          key={c._id || index}
+          className="flex gap-3 group"
+        >
+          {/* Commenter's image */}
+          <img
+            src={c.user?.profileImage || studySpher}
+            alt={c.user?.full_name || "User"}
+            className="w-8 h-8 rounded-full object-cover"
+          />
 
-      {/* Comment */}
-      <div className="bg-white px-4 py-2.5 rounded-2xl shadow-sm flex-1">
+          {/* Comment */}
+          <div className="bg-white px-4 py-2.5 rounded-2xl shadow-sm flex-1">
 
-        {/* Name + three dots */}
-        <div className="flex items-center justify-between">
+            {/* Name + three dots */}
+            <div className="flex items-center justify-between">
 
-          <p className="text-sm font-semibold text-gray-800">
-            {c.user?.full_name || "Unknown"}
-          </p>
+              <p className="text-sm font-semibold text-gray-800">
+                {c.user?.full_name || "Unknown"}
+              </p>
 
-          {/* Three dots */}
-          <div className="relative">
-
-  <button
-    className="
-      opacity-0 group-hover:opacity-100
-      transition-opacity
-      w-8 h-8 rounded-full
-      hover:bg-gray-100
-      text-gray-500 hover:text-gray-800
-    "
-    onClick={() =>
-      setCommentMenu((prev) =>
-        prev === c._id ? null : c._id
-      )
-    }
-  >
-    ⋮
-  </button>
-
-  {/* Comment menu */}
-  {commentMenu === c._id && (
-    <div className="absolute right-0 top-full mt-1 z-50 w-32 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+              {/* Three dots */}
+              <div className="relative">
 
       <button
-        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-        onClick={() => {
-          console.log("Edit comment:", c._id);
-          setCommentMenu(null);
-        }}
-      >
-        Edit
-      </button>
-
-      <button
+        className="
+          opacity-0 group-hover:opacity-100
+          transition-opacity
+          w-8 h-8 rounded-full
+          hover:bg-gray-100
+          text-gray-500 hover:text-gray-800
+        "
         onClick={() =>
-          handleDeleteComment(post._id, c._id)
+          setCommentMenu((prev) =>
+            prev === c._id ? null : c._id
+          )
         }
-        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
       >
-        🗑️
-        <span>Delete</span>
+        ⋮
       </button>
 
-    </div>
-  )}
+      {/* Comment menu */}
+      {commentMenu === c._id && (
+        <div className="absolute right-0 top-full mt-1 z-50 w-32 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
 
-</div>
+          <button
+            onClick={() =>
+              console.log("click")
+            }
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+          >
+            
+            <span>Reply</span>
+          </button>
+
+           <button
+            onClick={() =>
+              console.log("click")
+            }
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+          >
+            
+            <span>Share</span>
+          </button>
+
+          {
+            isOwner && <div>
+                 <button
+            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+            onClick={() => {
+              console.log("Edit comment:", c._id);
+              setCommentMenu(null);
+            }}
+          >
+            Edit
+          </button>
+
+          <button
+            onClick={() =>
+              handleDeleteComment(post._id, c._id)
+            }
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+          >
+            🗑️
+            <span>Delete</span>
+          </button>
+
+            </div>
+          }
+
+
+         
+          
+
 
         </div>
+      )}
 
-        {/* Comment text */}
-        <p className="text-sm text-gray-600 mt-0.5">
-          {c.text}
-        </p>
-
-        {/* Date */}
-        <p className="text-xs text-gray-400 mt-1">
-          {c.createdAt
-            ? new Date(c.createdAt).toLocaleString()
-            : ""}
-        </p>
-
-      </div>
     </div>
-  ))
-) : (
-  <p className="text-sm text-gray-400 text-center py-3">
-    No comments yet. Be the first!
-  </p>
-)}
-                  </div>
 
-                  {/* ADD COMMENT */}
-                  <div className="flex gap-3">
-
-                    <img
-                      src={
-                        user?.profileImage ||
-                        studySpher
-                      }
-                      alt={
-                        user?.full_name ||
-                        "User"
-                      }
-                      className="w-9 h-9 rounded-full object-cover"
-                    />
-
-                    <div className="flex-1">
-
-                      <input
-                        type="text"
-                        value={comment}
-                        onChange={(e) =>
-                          setComment(
-                            e.target.value
-                          )
-                        }
-                        placeholder={`Comment as ${
-                          user?.full_name ||
-                          "User"
-                        }`}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                        onKeyDown={(e) => {
-                          if (
-                            e.key === "Enter"
-                          ) {
-                            handleSubmitComment(
-                              post._id
-                            );
-                          }
-                        }}
-                      />
-
-                      <button
-                        onClick={() =>
-                          handleSubmitComment(
-                            post._id
-                          )
-                        }
-                        disabled={
-                          submitting ||
-                          !comment.trim()
-                        }
-                        className="mt-2 px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all text-sm font-medium"
-                      >
-                        {submitting
-                          ? "Posting..."
-                          : "Comment"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
-          );
-        })}
-      </div>
 
-      {/* =================================================
-          LOAD MORE
-      ================================================= */}
-      <div className="flex justify-center mt-8">
+            {/* Comment text */}
+            <p className="text-sm text-gray-600 mt-0.5">
+              {c.text}
+            </p>
 
-        <button
-          className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-medium hover:bg-indigo-700 transition-colors"
-          onClick={() =>
-            window.location.reload()
-          }
-        >
-          Load More Posts
-        </button>
+            {/* Date */}
+            <p className="text-xs text-gray-400 mt-1">
+              {c.createdAt
+                ? new Date(c.createdAt).toLocaleString()
+                : ""}
+            </p>
+
+          </div>
+        </div>
+      ))
+    ) : (
+      <p className="text-sm text-gray-400 text-center py-3">
+        No comments yet. Be the first!
+      </p>
+    )}
+                      </div>
+
+                      {/* ADD COMMENT */}
+                      <div className="flex gap-3">
+
+                        <img
+                          src={
+                            user?.profileImage ||
+                            studySpher
+                          }
+                          alt={
+                            user?.full_name ||
+                            "User"
+                          }
+                          className="w-9 h-9 rounded-full object-cover"
+                        />
+
+                        <div className="flex-1">
+
+                          <input
+                            type="text"
+                            value={comment}
+                            onChange={(e) =>
+                              setComment(
+                                e.target.value
+                              )
+                            }
+                            placeholder={`Comment as ${
+                              user?.full_name ||
+                              "User"
+                            }`}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "Enter"
+                              ) {
+                                handleSubmitComment(
+                                  post._id
+                                );
+                              }
+                            }}
+                          />
+
+                          <button
+                            onClick={() =>
+                              handleSubmitComment(
+                                post._id
+                              )
+                            }
+                            disabled={
+                              submitting ||
+                              !comment.trim()
+                            }
+                            className="mt-2 px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all text-sm font-medium"
+                          >
+                            {submitting
+                              ? "Posting..."
+                              : "Comment"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* =================================================
+              LOAD MORE
+          ================================================= */}
+          <div className="flex justify-center mt-8">
+
+            <button
+              className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-medium hover:bg-indigo-700 transition-colors"
+              onClick={() =>
+                window.location.reload()
+              }
+            >
+              Load More Posts
+            </button>
 
       </div>
 
