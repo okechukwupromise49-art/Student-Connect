@@ -1,6 +1,6 @@
 import axios from "axios";
 import { toast } from "react-toastify";
-import API_URL from "../Api";
+import API_URL from "./src/Api";
 
 export default function usePostFunctions({
   posts,
