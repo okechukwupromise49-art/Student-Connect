@@ -77,10 +77,8 @@ export default function PostFeed() {
   // =====================================================
   // SUBMIT COMMENT
   // =====================================================
-  const handleSubmitComment = async (id, text) => {
-  const cleanText = text?.trim();
-
-  if (!cleanText) return;
+  const handleSubmitComment = async (id, commentText = comment) => {
+  if (!commentText || !commentText.trim()) return;
 
   try {
     setSubmitting(true);
@@ -88,7 +86,7 @@ export default function PostFeed() {
     const res = await axios.post(
       `${API_URL}/api/posts/comment/${id}`,
       {
-        comment: cleanText,
+        comment: commentText.trim(),
       },
       {
         withCredentials: true,
@@ -100,27 +98,35 @@ export default function PostFeed() {
         post._id === id
           ? {
               ...post,
+
               comments: [
                 ...(post.comments || []),
                 res.data.comment,
               ],
-              commentsCount: res.data.commentsCount,
+
+              commentsCount:
+                res.data.commentsCount,
             }
           : post
       )
     );
 
-    toast.success("Comment successfully added");
+    setComment("");
+
+    toast.success(
+      "Comment successfully added"
+    );
 
   } catch (error) {
     console.log(
       "Comment error:",
-      error.response?.data || error.message
+      error.response?.data ||
+      error.message
     );
 
     toast.error(
       error.response?.data?.message ||
-        "Failed to post comment"
+      "Failed to post comment"
     );
 
   } finally {
@@ -753,7 +759,7 @@ const handleShareComment = async (postId, comment) => {
                           <button
                             onClick={() =>
                               handleSubmitComment(
-                                post._id
+                                post._id, comment
                               )
                             }
                             disabled={
