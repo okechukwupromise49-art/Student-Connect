@@ -73,23 +73,26 @@ export default function ProfillePostField({
   // =====================================================
 
   const submitComment = async (postId) => {
-    if (!comment.trim()) return;
+  const text = String(comment ?? "").trim();
 
-    try {
-      setSubmitting(true);
+  if (!text || submitting) return;
 
-      await handleSubmitComment(
-        postId,
-        comment
-      );
+  try {
+    setSubmitting(true);
 
-      setComment("");
+    await handleSubmitComment(
+      postId,
+      text
+    );
 
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    setComment("");
 
+  } catch (error) {
+    console.error("Profile comment error:", error);
+  } finally {
+    setSubmitting(false);
+  }
+};
   // =====================================================
   // POST OWNER
   // =====================================================

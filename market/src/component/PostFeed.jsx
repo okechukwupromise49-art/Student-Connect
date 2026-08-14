@@ -77,87 +77,59 @@ export default function PostFeed() {
   // =====================================================
   // SUBMIT COMMENT
   // =====================================================
-  const handleSubmitComment = async (id) => {
-    if (!comment.trim()) return;
+  const handleSubmitComment = async (id, commentText) => {
+  const text = String(commentText ?? "").trim();
 
-    try {
-      setSubmitting(true);
-      const res = await axios.post(
-        `${API_URL}/api/posts/comment/${id}`,
-        {
-          comment: comment.trim(),
-        },
-        {
-          withCredentials: true,
-        }
-      );
+  if (!text) return;
 
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post._id === id
-            ? {
-                ...post,
-                comments: [
-                  ...(post.comments || []),
-                  res.data.comment,
-                ],
-                commentsCount: res.data.commentsCount,
-              }
-            : post
-        )
-      );
+  try {
+    setSubmitting(true);
 
-      setComment("");
+    const res = await axios.post(
+      `${API_URL}/api/posts/comment/${id}`,
+      {
+        comment: text,
+      },
+      {
+        withCredentials: true,
+      }
+    );
 
-      toast.success("Comment successfully added");
-    } catch (error) {
-      console.log(
-        "Comment error:",
-        error.response?.data || error.message
-      );
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post._id === id
+          ? {
+              ...post,
+              comments: [
+                ...(post.comments || []),
+                res.data.comment,
+              ],
+              commentsCount: res.data.commentsCount,
+            }
+          : post
+      )
+    );
 
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to post comment"
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    // This can remain here for PostFeed
+    setComment("");
 
-  // =====================================================
-  // DELETE POST
-  // =====================================================
-  const handleDelete = async (postId) => {
-    try {
-      await axios.delete(
-        `${API_URL}/api/posts/${postId}`,
-        {
-          withCredentials: true,
-        }
-      );
+    toast.success("Comment successfully added");
 
-      setPosts((prevPosts) =>
-        prevPosts.filter(
-          (post) => post._id !== postId
-        )
-      );
+  } catch (error) {
+    console.log(
+      "Comment error:",
+      error.response?.data || error.message
+    );
 
-      setPostMenu(null);
+    toast.error(
+      error.response?.data?.message ||
+        "Failed to post comment"
+    );
 
-      toast.success("Post deleted successfully");
-    } catch (error) {
-      console.log(
-        "Delete error:",
-        error.response?.data || error.message
-      );
-
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to delete post"
-      );
-    }
-  };
+  } finally {
+    setSubmitting(false);
+  }
+};
 
 
   const handleDeleteComment = async (postId, commentId) => {
