@@ -413,5 +413,48 @@ router.delete("/:postId/comment/:commentId", auth, async (req, res) => {
   }
 });
 
+// ===============================
+// GET INDIVIDUAL POST
+// ===============================
+router.get("/profile/:userId/posts", auth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const posts = await Post.find({
+      author: userId,
+    })
+      .populate(
+        "author",
+        "full_name profileImage department institution"
+      )
+      .populate(
+        "comments.user",
+        "full_name profileImage"
+      )
+      .sort({ createdAt: -1 });
+
+    const formattedPosts = posts.map((post) => ({
+      ...post.toObject(),
+
+      // Check if current user liked this post
+      liked: post.likes.some(
+        (id) =>
+          id.toString() === req.user.id.toString()
+      ),
+
+      likesCount: post.likes.length,
+      commentsCount: post.comments.length,
+    }));
+
+    res.status(200).json(formattedPosts);
+
+  } catch (error) {
+    console.error("Get profile posts error:", error);
+
+    res.status(500).json({
+      message: "Failed to get profile posts",
+    });
+  }
+});
 
 module.exports = router;
