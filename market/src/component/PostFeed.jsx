@@ -247,6 +247,30 @@ export default function PostFeed() {
     (post) => post._id === isModalOpen
   );
 
+
+  const handleSharePost = async (post) => {
+  const shareUrl = `${window.location.origin}/post/${post._id}`;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: `${post.author?.full_name || "StudyConnect"}'s post`,
+        text: post.content || "Check out this post on StudyConnect",
+        url: shareUrl,
+      });
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+
+      toast.success("Post link copied!");
+    }
+  } catch (error) {
+    if (error.name !== "AbortError") {
+      console.error("Share error:", error);
+      toast.error("Unable to share post");
+    }
+  }
+};
+
   return (
     <div className="max-w-2xl mx-auto">
 
@@ -507,6 +531,7 @@ export default function PostFeed() {
                 {/* SHARE */}
                 <button
                   className="flex items-center gap-2 hover:text-indigo-600 transition-colors"
+                  onClick={() => handleSharePost(post)}
                 >
                   <Share2 size={22} />
                 </button>
@@ -613,7 +638,7 @@ export default function PostFeed() {
             }
             className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
           >
-            🗑️
+            
             <span>Delete</span>
           </button>
 
