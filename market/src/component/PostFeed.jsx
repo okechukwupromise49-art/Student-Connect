@@ -271,6 +271,30 @@ export default function PostFeed() {
   }
 };
 
+const handleShareComment = async (postId, comment) => {
+  const shareUrl =
+    `${window.location.origin}/post/${postId}#comment-${comment._id}`;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: `${comment.user?.full_name || "User"}'s comment`,
+        text: comment.text,
+        url: shareUrl,
+      });
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+
+      toast.success("Comment link copied!");
+    }
+  } catch (error) {
+    if (error.name !== "AbortError") {
+      console.error("Share comment error:", error);
+      toast.error("Unable to share comment");
+    }
+  }
+};
+
   return (
     <div className="max-w-2xl mx-auto">
 
@@ -611,9 +635,7 @@ export default function PostFeed() {
           </button>
 
            <button
-            onClick={() =>
-              console.log("click")
-            }
+            onClick={() => handleShareComment(post._id, c)}
             className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-red-50"
           >
             
