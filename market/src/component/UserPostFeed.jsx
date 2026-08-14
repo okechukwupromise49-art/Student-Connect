@@ -72,7 +72,7 @@ export default function ProfillePostField({
   // SUBMIT COMMENT
   // =====================================================
 
-  const submitComment = async (postId) => {
+ const submitComment = async (postId) => {
   const text = comment?.trim();
 
   if (!text) return;
@@ -87,7 +87,6 @@ export default function ProfillePostField({
     setSubmitting(false);
   }
 };
-
   // =====================================================
   // POST OWNER
   // =====================================================
