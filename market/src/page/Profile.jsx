@@ -17,8 +17,9 @@ import {
 import axios from "axios";
 import API_URL from "../Api";
 
-import ProfillePostField from "./ProfillePostField";
+
 import usePostFunctions from "../../PostFunction";
+import ProfillePostField from "../component/UserPostFeed";
 
 export default function Profile() {
   const { id } = useParams();
