@@ -183,9 +183,7 @@ export default function PostFeed() {
     );
 
     // Close comment menu
-    setCommentMenu((prev) =>
-      prev.filter((id) => id !== commentId)
-    );
+    setCommentMenu(null);
 
     toast.success("Comment deleted successfully");
 
