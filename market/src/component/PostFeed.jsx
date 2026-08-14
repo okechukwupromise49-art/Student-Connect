@@ -77,53 +77,69 @@ export default function PostFeed() {
   // =====================================================
   // SUBMIT COMMENT
   // =====================================================
-  const handleSubmitComment = async (id) => {
-    if (!comment.trim()) return;
+  // =====================================================
+// SUBMIT COMMENT
+// =====================================================
 
-    try {
-      setSubmitting(true);
-      const res = await axios.post(
-        `${API_URL}/api/posts/comment/${id}`,
-        {
-          comment: comment.trim(),
-        },
-        {
-          withCredentials: true,
-        }
-      );
+const handleSubmitComment = async (id, commentText) => {
+  // Make sure commentText is actually a string
+  if (!commentText || !commentText.trim()) {
+    return;
+  }
 
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post._id === id
-            ? {
-                ...post,
-                comments: [
-                  ...(post.comments || []),
-                  res.data.comment,
-                ],
-                commentsCount: res.data.commentsCount,
-              }
-            : post
-        )
-      );
+  try {
+    setSubmitting(true);
 
+    const res = await axios.post(
+      `${API_URL}/api/posts/comment/${id}`,
+      {
+        comment: commentText.trim(),
+      },
+      {
+        withCredentials: true,
+      }
+    );
+
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post._id === id
+          ? {
+              ...post,
+
+              comments: [
+                ...(post.comments || []),
+                res.data.comment,
+              ],
+
+              commentsCount:
+                res.data.commentsCount,
+            }
+          : post
+      )
+    );
+
+    // Clear parent comment state if it exists
+    if (setComment) {
       setComment("");
-
-      toast.success("Comment successfully added");
-    } catch (error) {
-      console.log(
-        "Comment error:",
-        error.response?.data || error.message
-      );
-
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to post comment"
-      );
-    } finally {
-      setSubmitting(false);
     }
-  };
+
+    toast.success("Comment successfully added");
+
+  } catch (error) {
+    console.log(
+      "Comment error:",
+      error.response?.data || error.message
+    );
+
+    toast.error(
+      error.response?.data?.message ||
+      "Failed to post comment"
+    );
+
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   // =====================================================
   // DELETE POST
