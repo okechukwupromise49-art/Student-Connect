@@ -579,7 +579,7 @@ export default function PostFeed() {
             onClick={() =>
               console.log("click")
             }
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-red-50"
           >
             
             <span>Reply</span>
@@ -589,7 +589,7 @@ export default function PostFeed() {
             onClick={() =>
               console.log("click")
             }
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-red-50"
           >
             
             <span>Share</span>
