@@ -578,7 +578,12 @@ const handleShareComment = async (postId, comment) => {
                   <div className="space-y-4 mb-5 max-h-64 overflow-y-auto">
 
                     {post.comments?.length > 0 ? (
-      post.comments.map((c, index) => (
+      post.comments.map((c, index) => {
+        const commentOwner =
+            c.user?._id?.toString() ===
+            user?._id?.toString();
+
+        return(
         <div
           key={c._id || index}
           className="flex gap-3 group"
@@ -693,8 +698,8 @@ const handleShareComment = async (postId, comment) => {
 
           </div>
         </div>
-      ))
-    ) : (
+                    )}))
+     : (
       <p className="text-sm text-gray-400 text-center py-3">
         No comments yet. Be the first!
       </p>
