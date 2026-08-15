@@ -72,7 +72,7 @@ export default function ProfillePostField({
   // SUBMIT COMMENT
   // =====================================================
 
- const submitComment = async (postId, comment) => {
+ const submitComment = async (postId) => {
   const commentText = comment?.trim();
 
   if (!commentText) return;
@@ -80,9 +80,12 @@ export default function ProfillePostField({
   try {
     setSubmitting(true);
 
-    await handleSubmitComment(postId, commentText = comment);
+    // Pass the trimmed text correctly
+    await handleSubmitComment(postId, commentText);
 
     setComment("");
+  } catch (error) {
+    console.error("Submit comment error:", error);
   } finally {
     setSubmitting(false);
   }
@@ -672,7 +675,7 @@ export default function ProfillePostField({
                           e.key === "Enter"
                         ) {
                           submitComment(
-                            post._id, comment
+                            post._id
                           );
                         }
                       }}
@@ -681,7 +684,7 @@ export default function ProfillePostField({
                     <button
                       onClick={() =>
                         submitComment(
-                          post._id, comment
+                          post._id
                         )
                       }
                       disabled={
