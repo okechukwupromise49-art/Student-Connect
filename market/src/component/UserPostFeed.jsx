@@ -73,14 +73,14 @@ export default function ProfillePostField({
   // =====================================================
 
  const submitComment = async (postId) => {
-  const text = comment?.trim();
+  const commentText = comment?.trim();
 
-  if (!text) return;
+  if (!commentText) return;
 
   try {
     setSubmitting(true);
 
-    await handleSubmitComment(postId, text);
+    await handleSubmitComment(postId, commentText);
 
     setComment("");
   } finally {
