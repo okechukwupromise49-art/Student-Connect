@@ -72,7 +72,7 @@ export default function ProfillePostField({
   // SUBMIT COMMENT
   // =====================================================
 
- const submitComment = async (postId) => {
+ const submitComment = async (postId, comment) => {
   const commentText = comment?.trim();
 
   if (!commentText) return;
