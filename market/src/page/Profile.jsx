@@ -414,9 +414,7 @@ export default function Profile() {
 
               handleLike={handleLike}
               handleComment={handleComment}
-              handleSubmitComment={
-                handleSubmitComment
-              }
+              
               handleDelete={handleDelete}
               handleDeleteComment={
                 handleDeleteComment

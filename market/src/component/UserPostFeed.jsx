@@ -18,7 +18,6 @@ export default function ProfillePostField({
   // Post functions coming from parent
   handleLike,
   handleComment,
-  handleSubmitComment,
   handleDelete,
   handleDeleteComment,
   handleSharePost,
@@ -72,20 +71,58 @@ export default function ProfillePostField({
   // SUBMIT COMMENT
   // =====================================================
 
- const submitComment = async (postId) => {
-  const commentText = comment?.trim();
-
-  if (!commentText) return;
+ const handleSubmitComment = async (id, commentText = comment) => {
+  if (!commentText || !commentText.trim()) return;
 
   try {
     setSubmitting(true);
 
-    // Pass the trimmed text correctly
-    await handleSubmitComment(postId, commentText);
+    const res = await axios.post(
+      `${API_URL}/api/posts/comment/${id}`,
+      {
+        comment: commentText.trim(),
+      },
+      {
+        withCredentials: true,
+      }
+    );
+
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post._id === id
+          ? {
+              ...post,
+
+              comments: [
+                ...(post.comments || []),
+                res.data.comment,
+              ],
+
+              commentsCount:
+                res.data.commentsCount,
+            }
+          : post
+      )
+    );
 
     setComment("");
+
+    toast.success(
+      "Comment successfully added"
+    );
+
   } catch (error) {
-    console.error("Submit comment error:", error);
+    console.log(
+      "Comment error:",
+      error.response?.data ||
+      error.message
+    );
+
+    toast.error(
+      error.response?.data?.message ||
+      "Failed to post comment"
+    );
+
   } finally {
     setSubmitting(false);
   }
@@ -674,8 +711,8 @@ export default function ProfillePostField({
                         if (
                           e.key === "Enter"
                         ) {
-                          submitComment(
-                            post._id
+                          handleSubmitComment(
+                            post._id, comment
                           );
                         }
                       }}
@@ -683,8 +720,8 @@ export default function ProfillePostField({
 
                     <button
                       onClick={() =>
-                        submitComment(
-                          post._id
+                        handleSubmitComment(
+                          post._id, comment
                         )
                       }
                       disabled={
