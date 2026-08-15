@@ -80,7 +80,7 @@ export default function ProfillePostField({
   try {
     setSubmitting(true);
 
-    await handleSubmitComment(postId, commentText);
+    await handleSubmitComment(postId, commentText = comment);
 
     setComment("");
   } finally {
@@ -672,7 +672,7 @@ export default function ProfillePostField({
                           e.key === "Enter"
                         ) {
                           submitComment(
-                            post._id
+                            post._id, comment
                           );
                         }
                       }}
@@ -681,7 +681,7 @@ export default function ProfillePostField({
                     <button
                       onClick={() =>
                         submitComment(
-                          post._id
+                          post._id, comment
                         )
                       }
                       disabled={
