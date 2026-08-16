@@ -14,35 +14,61 @@ import API_URL from "../Api";
 
 export default function PostFeed() {
   const navigate = useNavigate();
+
   const [posts, setPosts] = useState([]);
   const [user, setUser] = useState(null);
+
   const [comment, setComment] = useState("");
   const [commentClick, setCommentClick] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
   const [postMenu, setPostMenu] = useState(null);
+  const [commentMenu, setCommentMenu] = useState(null);
+
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
   const [replySubmitting, setReplySubmitting] = useState(false);
 
-  // Stores the ID of the post whose files are open
   const [isModalOpen, setIsModalOpen] = useState(null);
-  const [commentMenu, setCommentMenu] = useState([])
 
   // =====================================================
-  // LIKE POST
+  // FETCH USER + POSTS
+  // =====================================================
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const userRes = await axios.get(
+          `${API_URL}/api/register/details`,
+          { withCredentials: true }
+        );
+        setUser(userRes.data);
+
+        const postRes = await axios.get(
+          `${API_URL}/api/posts/display`,
+          { withCredentials: true }
+        );
+        setPosts(postRes.data);
+      } catch (error) {
+        console.log("Fetch error:", error.response?.data || error.message);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // =====================================================
+  // LIKE
   // =====================================================
   const handleLike = async (id) => {
     try {
       const res = await axios.post(
         `${API_URL}/api/posts/${id}/like`,
         {},
-        {
-          withCredentials: true,
-        }
+        { withCredentials: true }
       );
 
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
+      setPosts((prev) =>
+        prev.map((post) =>
           post._id === id
             ? {
                 ...post,
@@ -54,375 +80,219 @@ export default function PostFeed() {
         )
       );
     } catch (error) {
-      console.log(
-        "Like error:",
-        error.response?.data || error.message
-      );
-
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to like post"
-      );
+      toast.error(error.response?.data?.message || "Failed to like post");
     }
   };
 
   // =====================================================
-  // OPEN / CLOSE COMMENT
+  // COMMENT
   // =====================================================
-  const handleComment = (id) => {
-    setCommentClick((prev) =>
-      prev === id ? null : id
-    );
+  const handleSubmitComment = async (postId) => {
+    const text = comment.trim();
+    if (!text) return;
+
+    try {
+      setSubmitting(true);
+
+      const res = await axios.post(
+        `${API_URL}/api/posts/comment/${postId}`,
+        { comment: text },
+        { withCredentials: true }
+      );
+
+      setPosts((prev) =>
+        prev.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                comments: [...(post.comments || []), res.data.comment],
+                commentsCount: res.data.commentsCount,
+              }
+            : post
+        )
+      );
+
+      setComment("");
+      toast.success("Comment added");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to post comment");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
   // =====================================================
-  // SUBMIT COMMENT
+  // REPLY
   // =====================================================
-  const handleSubmitComment = async (id, commentText = comment) => {
-  if (!commentText || !commentText.trim()) return;
-  try {
-    setSubmitting(true);
+  const handleSubmitReply = async (postId, commentId) => {
+    const text = replyText.trim();
+    if (!text) return;
 
-    const res = await axios.post(
-      `${API_URL}/api/posts/comment/${id}`,
-      {
-        comment: commentText.trim(),
-      },
-      {
-        withCredentials: true,
-      }
-    );
+    try {
+      setReplySubmitting(true);
 
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post._id === id
-          ? {
-              ...post,
+      const res = await axios.post(
+        `${API_URL}/api/posts/comment/${postId}/reply/${commentId}`,
+        { reply: text },
+        { withCredentials: true }
+      );
 
-              comments: [
-                ...(post.comments || []),
-                res.data.comment,
-              ],
+      setPosts((prev) =>
+        prev.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                comments: post.comments.map((c) =>
+                  c._id === commentId
+                    ? {
+                        ...c,
+                        replies: [...(c.replies || []), res.data.reply],
+                      }
+                    : c
+                ),
+              }
+            : post
+        )
+      );
 
-              commentsCount:
-                res.data.commentsCount,
-            }
-          : post
-      )
-    );
-
-    setComment("");
-
-    toast.success(
-      "Comment successfully added"
-    );
-
-  } catch (error) {
-    console.log(
-      "Comment error:",
-      error.response?.data ||
-      error.message
-    );
-
-    toast.error(
-      error.response?.data?.message ||
-      "Failed to post comment"
-    );
-
-  } finally {
-    setSubmitting(false);
-  }
-};
+      setReplyText("");
+      setReplyingTo(null);
+      toast.success("Reply added");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to add reply");
+    } finally {
+      setReplySubmitting(false);
+    }
+  };
 
   // =====================================================
   // DELETE POST
   // =====================================================
   const handleDelete = async (postId) => {
     try {
+      await axios.delete(`${API_URL}/api/posts/${postId}`, {
+        withCredentials: true,
+      });
+
+      setPosts((prev) => prev.filter((p) => p._id !== postId));
+      setPostMenu(null);
+      toast.success("Post deleted");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete post");
+    }
+  };
+
+  // =====================================================
+  // DELETE COMMENT
+  // =====================================================
+  const handleDeleteComment = async (postId, commentId) => {
+    try {
       await axios.delete(
-        `${API_URL}/api/posts/${postId}`,
-        {
-          withCredentials: true,
-        }
+        `${API_URL}/api/posts/${postId}/comment/${commentId}`,
+        { withCredentials: true }
       );
 
-      setPosts((prevPosts) =>
-        prevPosts.filter(
-          (post) => post._id !== postId
+      setPosts((prev) =>
+        prev.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                comments: (post.comments || []).filter(
+                  (c) => c._id !== commentId
+                ),
+              }
+            : post
         )
       );
 
-      setPostMenu(null);
-
-      toast.success("Post deleted successfully");
+      setCommentMenu(null);
+      toast.success("Comment deleted");
     } catch (error) {
-      console.log(
-        "Delete error:",
-        error.response?.data || error.message
-      );
-
       toast.error(
-        error.response?.data?.message ||
-          "Failed to delete post"
+        error.response?.data?.message || "Failed to delete comment"
       );
     }
   };
 
-
-  const handleDeleteComment = async (postId, commentId) => {
-  try {
-    await axios.delete(
-      `${API_URL}/api/posts/${postId}/comment/${commentId}`,
-      {
-        withCredentials: true,
-      }
-    );
-
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post._id === postId
-          ? {
-              ...post,
-              comments: post.comments.filter(
-                (c) => c._id !== commentId
-              ),
-            }
-          : post
-      )
-    );
-
-    // Close comment menu
-    setCommentMenu(null);
-
-    toast.success("Comment deleted successfully");
-
-  } catch (error) {
-    console.error(
-      "Delete comment error:",
-      error.response?.data || error.message
-    );
-
-    
-  }
-};
-
   // =====================================================
-  // FETCH USER + POSTS
+  // SHARE
   // =====================================================
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // -----------------------------
-        // GET LOGGED-IN USER
-        // -----------------------------
-        const userRes = await axios.get(
-          `${API_URL}/api/register/details`,
-          {
-            withCredentials: true,
-          }
-        );
-
-        setUser(userRes.data);
-
-        // -----------------------------
-        // GET POSTS
-        // -----------------------------
-        const postRes = await axios.get(
-          `${API_URL}/api/posts/display`,
-          {
-            withCredentials: true,
-          }
-        );
-
-        setPosts(postRes.data);
-      } catch (error) {
-        console.log(
-          "Fetch error:",
-          error.response?.data || error.message
-        );
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // =====================================================
-  // FIND POST FOR MODAL
-  // =====================================================
-  const selectedPost = posts.find(
-    (post) => post._id === isModalOpen
-  );
-
-
   const handleSharePost = async (post) => {
-  const shareUrl = `${window.location.origin}/post/${post._id}`;
+    const shareUrl = `${window.location.origin}/post/${post._id}`;
 
-  try {
-    if (navigator.share) {
-      await navigator.share({
-        title: `${post.author?.full_name || "StudyConnect"}'s post`,
-        text: post.content || "Check out this post on StudyConnect",
-        url: shareUrl,
-      });
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
-
-      toast.success("Post link copied!");
-    }
-  } catch (error) {
-    if (error.name !== "AbortError") {
-      console.error("Share error:", error);
-      toast.error("Unable to share post");
-    }
-  }
-};
-
-const handleShareComment = async (postId, comment) => {
-  const shareUrl =
-    `${window.location.origin}/post/${postId}#comment-${comment._id}`;
-
-  try {
-    if (navigator.share) {
-      await navigator.share({
-        title: `${comment.user?.full_name || "User"}'s comment`,
-        text: comment.text,
-        url: shareUrl,
-      });
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
-
-      toast.success("Comment link copied!");
-    }
-  } catch (error) {
-    if (error.name !== "AbortError") {
-      console.error("Share comment error:", error);
-      toast.error("Unable to share comment");
-    }
-  }
-};
-
-const handleSubmitReply = async (postId, commentId) => {
-  if (!replyText.trim()) return;
-
-  try {
-    setReplySubmitting(true);
-
-    const res = await axios.post(
-      `${API_URL}/api/posts/comment/${postId}/reply/${commentId}`,
-      {
-        reply: replyText.trim(),
-      },
-      {
-        withCredentials: true,
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${post.author?.full_name || "StudyConnect"}'s post`,
+          text: post.content || "Check out this post",
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success("Link copied!");
       }
-    );
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        toast.error("Unable to share");
+      }
+    }
+  };
 
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post._id === postId
-          ? {
-              ...post,
-              comments: post.comments.map((comment) =>
-                comment._id === commentId
-                  ? {
-                      ...comment,
-                      replies: [
-                        ...(comment.replies || []),
-                        res.data.reply,
-                      ],
-                    }
-                  : comment
-              ),
-            }
-          : post
-      )
-    );
+  const handleShareComment = async (postId, comment) => {
+    const shareUrl = `${window.location.origin}/post/${postId}#comment-${comment._id}`;
 
-    setReplyText("");
-    setReplyingTo(null);
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${comment.user?.full_name || "User"}'s comment`,
+          text: comment.text,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success("Comment link copied!");
+      }
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        toast.error("Unable to share comment");
+      }
+    }
+  };
 
-    toast.success("Reply added");
-
-  } catch (error) {
-    console.log(
-      "Reply error:",
-      error.response?.data || error.message
-    );
-
-    toast.error(
-      error.response?.data?.message ||
-      "Failed to add reply"
-    );
-
-  } finally {
-    setReplySubmitting(false);
-  }
-};
+  const selectedPost = posts.find((p) => p._id === isModalOpen);
 
   return (
     <div className="max-w-2xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6">Latest Posts</h2>
 
-      {/* =================================================
-          PAGE TITLE
-      ================================================= */}
-      <h2 className="text-2xl font-bold mb-6">
-        Latest Posts
-      </h2>
-
-      {/* =================================================
-          POSTS
-      ================================================= */}
       <div className="space-y-6">
-
         {posts.map((post) => {
-
-          // Check if current logged-in user owns this post
           const isOwner =
-            post.author?._id?.toString() ===
-            user?._id?.toString();
+            post.author?._id?.toString() === user?._id?.toString();
 
           return (
             <div
               key={post._id}
-              className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
+              className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
             >
-
-              {/* =================================================
-                  POST HEADER
-              ================================================= */}
+              {/* HEADER */}
               <div className="p-5 flex items-center justify-between">
-
-                {/* AUTHOR */}
                 <div
                   className="flex items-center gap-3 cursor-pointer"
-                  onClick={() =>
-                    navigate(
-                      `/profile/${post.author?._id}`
-                    )
-                  }
+                  onClick={() => navigate(`/profile/${post.author?._id}`)}
                 >
                   <img
-                    src={
-                      post.author?.profileImage ||
-                      studySpher
-                    }
-                    alt={
-                      post.author?.full_name ||
-                      "User"
-                    }
+                    src={post.author?.profileImage || studySpher}
+                    alt={post.author?.full_name || "User"}
                     className="w-11 h-11 rounded-full object-cover ring-2 ring-indigo-100"
                   />
-
                   <div>
                     <p className="font-semibold text-gray-900">
-                      {post.author?.full_name ||
-                        "Unknown User"}
+                      {post.author?.full_name || "Unknown User"}
                     </p>
-
                     <p className="text-xs text-gray-500">
                       {post.createdAt
-                        ? new Date(
-                            post.createdAt
-                          ).toLocaleString()
+                        ? new Date(post.createdAt).toLocaleString()
                         : ""}
                     </p>
                   </div>
@@ -430,14 +300,11 @@ const handleSubmitReply = async (postId, commentId) => {
 
                 {/* POST MENU */}
                 <div className="relative">
-
                   <button
                     className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100"
                     onClick={() =>
                       setPostMenu((prev) =>
-                        prev === post._id
-                          ? null
-                          : post._id
+                        prev === post._id ? null : post._id
                       )
                     }
                   >
@@ -446,46 +313,24 @@ const handleSubmitReply = async (postId, commentId) => {
 
                   {postMenu === post._id && (
                     <div className="absolute right-0 top-full mt-2 z-50 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
-
-                      {/* SAVE */}
                       <button
                         className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
-                        onClick={() => {
-                          console.log(
-                            "Save:",
-                            post._id
-                          );
-
-                          setPostMenu(null);
-                        }}
+                        onClick={() => setPostMenu(null)}
                       >
                         Save
                       </button>
 
-                      {/* OWNER OPTIONS */}
                       {isOwner && (
                         <>
-                          {/* EDIT */}
                           <button
                             className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
-                            onClick={() => {
-                              console.log(
-                                "Edit:",
-                                post._id
-                              );
-
-                              setPostMenu(null);
-                            }}
+                            onClick={() => setPostMenu(null)}
                           >
                             Edit
                           </button>
-
-                          {/* DELETE */}
                           <button
                             className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50"
-                            onClick={() =>
-                              handleDelete(post._id)
-                            }
+                            onClick={() => handleDelete(post._id)}
                           >
                             Delete
                           </button>
@@ -496,470 +341,358 @@ const handleSubmitReply = async (postId, commentId) => {
                 </div>
               </div>
 
-              {/* =================================================
-                  POST CONTENT
-              ================================================= */}
+              {/* CONTENT */}
               <div className="px-5 pb-5">
-
                 {post.content && (
                   <p className="text-gray-700 leading-relaxed mb-4">
                     {post.content}
                   </p>
                 )}
 
-                {/* =================================================
-                    POST FILES
-                ================================================= */}
-                {post.files?.map(
-                  (file, index) => (
-                    <div
-                      key={index}
-                      className="mb-3 cursor-pointer"
-                      onClick={() =>
-                        setIsModalOpen(post._id)
-                      }
-                    >
+                {post.files?.map((file, index) => (
+                  <div
+                    key={index}
+                    className="mb-3 cursor-pointer"
+                    onClick={() => setIsModalOpen(post._id)}
+                  >
+                    {file.type === "image" && (
+                      <img
+                        src={file.url}
+                        alt={file.name || "Post image"}
+                        className="rounded-2xl w-full object-cover max-h-[420px]"
+                      />
+                    )}
 
-                      {/* IMAGE */}
-                      {file.type === "image" && (
-                        <img
-                          src={file.url}
-                          alt={
-                            file.name ||
-                            "Post image"
-                          }
-                          className="rounded-2xl w-full object-cover max-h-[420px]"
-                        />
-                      )}
+                    {file.type === "video" && (
+                      <video
+                        src={file.url}
+                        controls
+                        className="rounded-2xl w-full max-h-[420px]"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
 
-                      {/* VIDEO */}
-                      {file.type === "video" && (
-                        <video
-                          src={file.url}
-                          controls
-                          className="rounded-2xl w-full max-h-[420px]"
-                          onClick={(e) =>
-                            e.stopPropagation()
-                          }
-                        />
-                      )}
-
-                      {/* PDF */}
-                      {file.type === "pdf" && (
-                        <a
-                          href={file.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) =>
-                            e.stopPropagation()
-                          }
-                          className="flex items-center gap-3 p-4 bg-indigo-50 rounded-xl text-indigo-600 font-medium"
-                        >
-                          <span className="text-2xl">
-                            📄
-                          </span>
-
-                          <span>
-                            {file.name ||
-                              "View PDF"}
-                          </span>
-                        </a>
-                      )}
-                    </div>
-                  )
-                )}
+                    {file.type === "pdf" && (
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-3 p-4 bg-indigo-50 rounded-xl text-indigo-600 font-medium"
+                      >
+                        <span className="text-2xl">📄</span>
+                        <span>{file.name || "View PDF"}</span>
+                      </a>
+                    )}
+                  </div>
+                ))}
               </div>
 
-              {/* =================================================
-                  ACTION BUTTONS
-              ================================================= */}
+              {/* ACTIONS */}
               <div className="border-t px-5 py-4 flex items-center justify-between text-gray-500">
-
-                {/* LIKE */}
                 <button
-                  onClick={() =>
-                    handleLike(post._id)
-                  }
-                  className={`flex items-center gap-2 transition-colors group ${
-                    post.liked
-                      ? "text-red-500"
-                      : "hover:text-red-500"
+                  onClick={() => handleLike(post._id)}
+                  className={`flex items-center gap-2 ${
+                    post.liked ? "text-red-500" : "hover:text-red-500"
                   }`}
                 >
                   <Heart
                     size={22}
-                    className="group-hover:scale-110 transition-transform"
-                    fill={
-                      post.liked
-                        ? "currentColor"
-                        : "none"
-                    }
+                    fill={post.liked ? "currentColor" : "none"}
                   />
-
                   <span className="font-medium">
                     {post.likes?.length || 0}
                   </span>
                 </button>
 
-                {/* COMMENTS */}
                 <button
-                  className="flex items-center gap-2 hover:text-indigo-600 transition-colors"
+                  className="flex items-center gap-2 hover:text-indigo-600"
                   onClick={() =>
-                    handleComment(post._id)
+                    setCommentClick((prev) =>
+                      prev === post._id ? null : post._id
+                    )
                   }
                 >
                   <MessageCircle size={22} />
-
                   <span className="font-medium">
                     {post.comments?.length || 0}
                   </span>
                 </button>
 
-                {/* SHARE */}
                 <button
-                  className="flex items-center gap-2 hover:text-indigo-600 transition-colors"
+                  className="flex items-center gap-2 hover:text-indigo-600"
                   onClick={() => handleSharePost(post)}
                 >
                   <Share2 size={22} />
                 </button>
 
-                {/* BOOKMARK */}
-                <button
-                  className="flex items-center gap-2 hover:text-amber-500 transition-colors"
-                >
+                <button className="flex items-center gap-2 hover:text-amber-500">
                   <Bookmark size={22} />
                 </button>
               </div>
 
-              {/* =================================================
-                  COMMENT SECTION
-              ================================================= */}
+              {/* COMMENTS SECTION */}
               {commentClick === post._id && (
                 <div className="border-t px-5 py-4 bg-gray-50">
-
-                  {/* EXISTING COMMENTS */}
-                  <div className="space-y-4 mb-5 max-h-64 overflow-y-auto">
-
+                  {/* Existing Comments */}
+                  <div className="space-y-4 mb-5 max-h-72 overflow-y-auto">
                     {post.comments?.length > 0 ? (
-      post.comments.map((c, index) => {
-        const commentOwner =
-            c.user?._id?.toString() ===
-            user?._id?.toString();
+                      post.comments.map((c) => {
+                        const commentOwner =
+                          c.user?._id?.toString() ===
+                          user?._id?.toString();
 
-        return(
-        <div
-          key={c._id || index}
-          className="flex gap-3 group"
-        >
-          {/* Commenter's image */}
-          <img
-            src={c.user?.profileImage || studySpher}
-            alt={c.user?.full_name || "User"}
-            className="w-8 h-8 rounded-full object-cover"
-          />
+                        return (
+                          <div key={c._id} className="flex gap-3 group">
+                            <img
+                              src={c.user?.profileImage || studySpher}
+                              alt={c.user?.full_name || "User"}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
 
-          {/* Comment */}
-          <div className="bg-white px-4 py-2.5 rounded-2xl shadow-sm flex-1">
+                            <div className="bg-white px-4 py-2.5 rounded-2xl shadow-sm flex-1">
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm font-semibold text-gray-800">
+                                  {c.user?.full_name || "Unknown"}
+                                </p>
 
-            {/* Name + three dots */}
-            <div className="flex items-center justify-between">
+                                <div className="relative">
+                                  <button
+                                    className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full hover:bg-gray-100 text-gray-500"
+                                    onClick={() =>
+                                      setCommentMenu((prev) =>
+                                        prev === c._id ? null : c._id
+                                      )
+                                    }
+                                  >
+                                    ⋮
+                                  </button>
 
-              <p className="text-sm font-semibold text-gray-800">
-                {c.user?.full_name || "Unknown"}
-              </p>
+                                  {commentMenu === c._id && (
+                                    <div className="absolute right-0 top-full mt-1 z-50 w-32 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+                                      <button
+                                        className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
+                                        onClick={() => {
+                                          setReplyingTo(c._id);
+                                          setReplyText("");
+                                          setCommentMenu(null);
+                                        }}
+                                      >
+                                        Reply
+                                      </button>
 
-              {/* Three dots */}
-              <div className="relative">
+                                      <button
+                                        className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
+                                        onClick={() => {
+                                          handleShareComment(post._id, c);
+                                          setCommentMenu(null);
+                                        }}
+                                      >
+                                        Share
+                                      </button>
 
-      <button
-        className="
-          opacity-0 group-hover:opacity-100
-          transition-opacity
-          w-8 h-8 rounded-full
-          hover:bg-gray-100
-          text-gray-500 hover:text-gray-800
-        "
-        onClick={() =>
-          setCommentMenu((prev) =>
-            prev === c._id ? null : c._id
-          )
-        }
-      >
-        ⋮
-      </button>
+                                      {commentOwner && (
+                                        <button
+                                          className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+                                          onClick={() =>
+                                            handleDeleteComment(
+                                              post._id,
+                                              c._id
+                                            )
+                                          }
+                                        >
+                                          Delete
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
 
-      {/* Comment menu */}
-      {commentMenu === c._id && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-32 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+                              <p className="text-sm text-gray-600 mt-0.5">
+                                {c.text}
+                              </p>
 
-          <button
-            onClick={() => {
-              setReplyingTo(c._id);
-              setReplyText("");
-              setCommentMenu(null);
-            }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-red-50"
-          >
-            
-            <span>Reply</span>
-          </button>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {c.createdAt
+                                  ? new Date(c.createdAt).toLocaleString()
+                                  : ""}
+                              </p>
 
-           <button
-            onClick={() => handleShareComment(post._id, c)}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-red-50"
-          >
-            
-            <span>Share</span>
-          </button>
+                              {/* Replies */}
+                              {c.replies?.length > 0 && (
+                                <div className="mt-3 ml-2 space-y-3">
+                                  {c.replies.map((reply) => (
+                                    <div
+                                      key={reply._id}
+                                      className="flex gap-2"
+                                    >
+                                      <img
+                                        src={
+                                          reply.user?.profileImage ||
+                                          studySpher
+                                        }
+                                        alt={
+                                          reply.user?.full_name || "User"
+                                        }
+                                        className="w-7 h-7 rounded-full object-cover"
+                                      />
+                                      <div className="bg-gray-50 px-3 py-2 rounded-xl flex-1">
+                                        <p className="text-xs font-semibold text-gray-800">
+                                          {reply.user?.full_name ||
+                                            "Unknown"}
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                          {reply.text}
+                                        </p>
+                                        <p className="text-[11px] text-gray-400 mt-1">
+                                          {reply.createdAt
+                                            ? new Date(
+                                                reply.createdAt
+                                              ).toLocaleString()
+                                            : ""}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
 
-          {
-            commentOwner && <div>
-                 <button
-            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-            onClick={() => {
-              console.log("Edit comment:", c._id);
-              setCommentMenu(null);
-            }}
-          >
-            Edit
-          </button>
+                              {/* Reply Input */}
+                              {replyingTo === c._id && (
+                                <div className="mt-3 flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={replyText}
+                                    onChange={(e) =>
+                                      setReplyText(e.target.value)
+                                    }
+                                    placeholder={`Reply to ${
+                                      c.user?.full_name || "User"
+                                    }`}
+                                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        handleSubmitReply(post._id, c._id);
+                                      }
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() =>
+                                      handleSubmitReply(post._id, c._id)
+                                    }
+                                    disabled={
+                                      replySubmitting || !replyText.trim()
+                                    }
+                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50"
+                                  >
+                                    {replySubmitting ? "..." : "Reply"}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-gray-400 text-center py-3">
+                        No comments yet. Be the first!
+                      </p>
+                    )}
+                  </div>
 
-          <button
-            onClick={() =>
-              handleDeleteComment(post._id, c._id)
-            }
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
-          >
-            
-            <span>Delete</span>
-          </button>
-
-            </div>
-          }
-
-
-         
-          
-
-
-        </div>
-      )}
-
-    </div>
-
-            </div>
-
-            {/* Comment text */}
-            <p className="text-sm text-gray-600 mt-0.5">
-              {c.text}
-            </p>
-
-            {/* Date */}
-            <p className="text-xs text-gray-400 mt-1">
-              {c.createdAt
-                ? new Date(c.createdAt).toLocaleString()
-                : ""}
-            </p>
-
-          </div>
-        </div>
-                    )}))
-     : (
-      <p className="text-sm text-gray-400 text-center py-3">
-        No comments yet. Be the first!
-      </p>
-    )}
-
-
-
-                      </div>
-
-                      {/* ADD COMMENT */}
-                      <div className="flex gap-3">
-
-                        <img
-                          src={
-                            user?.profileImage ||
-                            studySpher
+                  {/* Add Comment */}
+                  <div className="flex gap-3">
+                    <img
+                      src={user?.profileImage || studySpher}
+                      alt={user?.full_name || "User"}
+                      className="w-9 h-9 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder={`Comment as ${
+                          user?.full_name || "User"
+                        }`}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleSubmitComment(post._id);
                           }
-                          alt={
-                            user?.full_name ||
-                            "User"
-                          }
-                          className="w-9 h-9 rounded-full object-cover"
-                        />
-
-                        <div className="flex-1">
-
-                          <input
-                            type="text"
-                            value={comment}
-                            onChange={(e) =>
-                              setComment(
-                                e.target.value
-                              )
-                            }
-                            placeholder={`Comment as ${
-                              user?.full_name ||
-                              "User"
-                            }`}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                            onKeyDown={(e) => {
-                              if (
-                                e.key === "Enter"
-                              ) {
-                                handleSubmitComment(
-                                  post._id, comment
-                                );
-                              }
-                            }}
-                          />
-
-                          <button
-                            onClick={() =>
-                              handleSubmitComment(
-                                post._id, comment
-                              )
-                            }
-                            disabled={
-                              submitting ||
-                              !comment.trim()
-                            }
-                            className="mt-2 px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all text-sm font-medium"
-                          >
-                            {submitting
-                              ? "Posting..."
-                              : "Comment"}
-                          </button>
-                        </div>
-                      </div>
+                        }}
+                      />
+                      <button
+                        onClick={() => handleSubmitComment(post._id)}
+                        disabled={submitting || !comment.trim()}
+                        className="mt-2 px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 text-sm font-medium"
+                      >
+                        {submitting ? "Posting..." : "Comment"}
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-
-
-          {replyingTo === c._id && (
-              <div className="mt-3 flex gap-2">
-                <input
-                  type="text"
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder={`Reply to ${
-                    c.user?.full_name || "User"
-                  }`}
-                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSubmitReply(post._id, c._id);
-                    }
-                  }}
-                />
-
-                <button
-                  onClick={() =>
-                    handleSubmitReply(post._id, c._id)
-                  }
-                  disabled={
-                    replySubmitting || !replyText.trim()
-                  }
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50"
-                >
-                  {replySubmitting ? "..." : "Reply"}
-                </button>
-              </div>
-            )}
-
-          {/* =================================================
-              LOAD MORE
-          ================================================= */}
-          <div className="flex justify-center mt-8">
-
-            <button
-              className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-medium hover:bg-indigo-700 transition-colors"
-              onClick={() =>
-                window.location.reload()
-              }
-            >
-              Load More Posts
-            </button>
-
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* =================================================
-          FILE MODAL
-      ================================================= */}
+      {/* LOAD MORE */}
+      <div className="flex justify-center mt-8">
+        <button
+          className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-medium hover:bg-indigo-700"
+          onClick={() => window.location.reload()}
+        >
+          Load More Posts
+        </button>
+      </div>
+
+      {/* FILE MODAL */}
       {isModalOpen && selectedPost && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4"
-          onClick={() =>
-            setIsModalOpen(null)
-          }
+          onClick={() => setIsModalOpen(null)}
         >
-
           <div
-            className="relative  rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+            className="relative max-w-4xl w-full max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
           >
+            <button
+              onClick={() => setIsModalOpen(null)}
+              className="flex items-center gap-2 mb-4 px-4 py-2 rounded-xl bg-gray-400 text-black hover:bg-indigo-50 hover:text-indigo-600 font-medium"
+            >
+              <ArrowLeft size={20} />
+              Back
+            </button>
 
-            {/* CLOSE BUTTON */}
-            <button 
-                onClick={() => setIsModalOpen(null)} 
-                className="flex bg-gray-400 items-center gap-2 mb-4 px-4 py-2 rounded-xl text-black hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium" 
-                > 
-                <ArrowLeft size={20} />
-                 Back
-                 
-             </button>
-
-            {/* FILES */}
-            {selectedPost.files?.map(
-              (file, index) => (
-                <div
-                  key={index}
-                  className="mb-4"
-                >
-
-                  {/* IMAGE */}
-                  {file.type === "image" && (
-                    <img
-                      src={file.url}
-                      alt={
-                        file.name ||
-                        "Post image"
-                      }
-                      className="rounded-xl w-full max-h-[80vh] object-contain"
-                    />
-                  )}
-
-                  {/* VIDEO */}
-                  {file.type === "video" && (
-                    <video
-                      src={file.url}
-                      controls
-                      autoPlay
-                      className="rounded-xl w-full max-h-[80vh]"
-                    />
-                  )}
-
-                  {/* PDF */}
-                  {file.type === "pdf" && (
-                    <iframe
-                      src={file.url}
-                      title={
-                        file.name || "PDF"
-                      }
-                      className="w-full h-[80vh] rounded-xl"
-                    />
-                  )}
-
-                </div>
-              )
-            )}
+            {selectedPost.files?.map((file, index) => (
+              <div key={index} className="mb-4">
+                {file.type === "image" && (
+                  <img
+                    src={file.url}
+                    alt={file.name || "Post image"}
+                    className="rounded-xl w-full max-h-[80vh] object-contain"
+                  />
+                )}
+                {file.type === "video" && (
+                  <video
+                    src={file.url}
+                    controls
+                    autoPlay
+                    className="rounded-xl w-full max-h-[80vh]"
+                  />
+                )}
+                {file.type === "pdf" && (
+                  <iframe
+                    src={file.url}
+                    title={file.name || "PDF"}
+                    className="w-full h-[80vh] rounded-xl"
+                  />
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
