@@ -413,7 +413,7 @@ router.delete("/:postId/comment/:commentId", auth, async (req, res) => {
   }
 });
 
-routes.post("/comment/:postId/:commentId/reply", auth, async (req,res) => {
+router.post("/comment/:postId/:commentId/reply", auth, async (req,res) => {
   try {
     const { postId, commentId } = req.params;
     const { text } = req.body;
