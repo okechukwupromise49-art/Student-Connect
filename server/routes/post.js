@@ -413,48 +413,72 @@ router.delete("/:postId/comment/:commentId", auth, async (req, res) => {
   }
 });
 
-// ===============================
-// GET INDIVIDUAL POST
-// ===============================
-router.get("/profile/:userId/posts", auth, async (req, res) => {
+routes.post("/comment/:postId/:commentId/reply", auth, async (req,res) => {
   try {
-    const { userId } = req.params;
+    const { postId, commentId } = req.params;
+    const { text } = req.body;
 
-    const posts = await Post.find({
-      author: userId,
-    })
-      .populate(
-        "author",
-        "full_name profileImage department institution"
-      )
-      .populate(
-        "comments.user",
-        "full_name profileImage"
-      )
-      .sort({ createdAt: -1 });
+    // Validate text
+    if (!text || !text.trim()) {
+      return res.status(400).json({
+        message: "Reply cannot be empty",
+      });
+    }
 
-    const formattedPosts = posts.map((post) => ({
-      ...post.toObject(),
+    // Find post
+    const post = await Post.findById(postId);
 
-      // Check if current user liked this post
-      liked: post.likes.some(
-        (id) =>
-          id.toString() === req.user.id.toString()
-      ),
+    if (!post) {
+      return res.status(404).json({
+        message: "Post not found",
+      });
+    }
 
-      likesCount: post.likes.length,
-      commentsCount: post.comments.length,
-    }));
+    // Find comment
+    const comment = post.comments.id(commentId);
 
-    res.status(200).json(formattedPosts);
+    if (!comment) {
+      return res.status(404).json({
+        message: "Comment not found",
+      });
+    }
+
+    // Add reply
+    comment.replies.push({
+      user: req.user._id,
+      text: text.trim(),
+    });
+
+    await post.save();
+
+    // Get the newly created reply
+    const newReply =
+      comment.replies[comment.replies.length - 1];
+
+    // Populate user information
+    await post.populate({
+      path: "comments.replies.user",
+      select: "full_name profileImage",
+    });
+
+    const populatedReply =
+      comment.replies.id(newReply._id);
+
+    res.status(201).json({
+      message: "Reply added successfully",
+      reply: populatedReply,
+    });
 
   } catch (error) {
-    console.error("Get profile posts error:", error);
+    console.error("Add reply error:", error);
 
     res.status(500).json({
-      message: "Failed to get profile posts",
+      message: "Failed to add reply",
+      error: error.message,
     });
   }
-});
+
+
+})
 
 module.exports = router;
