@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import studySpher from "../assets/studySpher.jpeg";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 
 export default function ProfillePostField({
