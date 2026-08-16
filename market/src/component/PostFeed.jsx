@@ -13,18 +13,19 @@ import { toast } from "react-toastify";
 import API_URL from "../Api";
 
 export default function PostFeed() {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [user, setUser] = useState(null);
-
   const [comment, setComment] = useState("");
   const [commentClick, setCommentClick] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [postMenu, setPostMenu] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replySubmitting, setReplySubmitting] = useState(false);
 
   // Stores the ID of the post whose files are open
   const [isModalOpen, setIsModalOpen] = useState(null);
-  const navigate = useNavigate();
-
   const [commentMenu, setCommentMenu] = useState([])
 
   // =====================================================
@@ -73,13 +74,11 @@ export default function PostFeed() {
       prev === id ? null : id
     );
   };
-
   // =====================================================
   // SUBMIT COMMENT
   // =====================================================
   const handleSubmitComment = async (id, commentText = comment) => {
   if (!commentText || !commentText.trim()) return;
-
   try {
     setSubmitting(true);
 
@@ -202,10 +201,7 @@ export default function PostFeed() {
       error.response?.data || error.message
     );
 
-    toast.error(
-      error.response?.data?.message ||
-      "Failed to delete comment"
-    );
+    
   }
 };
 
@@ -301,6 +297,64 @@ const handleShareComment = async (postId, comment) => {
       console.error("Share comment error:", error);
       toast.error("Unable to share comment");
     }
+  }
+};
+
+const handleSubmitReply = async (postId, commentId) => {
+  if (!replyText.trim()) return;
+
+  try {
+    setReplySubmitting(true);
+
+    const res = await axios.post(
+      `${API_URL}/api/posts/comment/${postId}/reply/${commentId}`,
+      {
+        reply: replyText.trim(),
+      },
+      {
+        withCredentials: true,
+      }
+    );
+
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post._id === postId
+          ? {
+              ...post,
+              comments: post.comments.map((comment) =>
+                comment._id === commentId
+                  ? {
+                      ...comment,
+                      replies: [
+                        ...(comment.replies || []),
+                        res.data.reply,
+                      ],
+                    }
+                  : comment
+              ),
+            }
+          : post
+      )
+    );
+
+    setReplyText("");
+    setReplyingTo(null);
+
+    toast.success("Reply added");
+
+  } catch (error) {
+    console.log(
+      "Reply error:",
+      error.response?.data || error.message
+    );
+
+    toast.error(
+      error.response?.data?.message ||
+      "Failed to add reply"
+    );
+
+  } finally {
+    setReplySubmitting(false);
   }
 };
 
@@ -639,9 +693,11 @@ const handleShareComment = async (postId, comment) => {
         <div className="absolute right-0 top-full mt-1 z-50 w-32 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
 
           <button
-            onClick={() =>
-              console.log("click")
-            }
+            onClick={() => {
+              setReplyingTo(c._id);
+              setReplyText("");
+              setCommentMenu(null);
+            }}
             className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-red-50"
           >
             
@@ -713,6 +769,9 @@ const handleShareComment = async (postId, comment) => {
         No comments yet. Be the first!
       </p>
     )}
+
+
+
                       </div>
 
                       {/* ADD COMMENT */}
@@ -780,6 +839,38 @@ const handleShareComment = async (postId, comment) => {
               );
             })}
           </div>
+
+
+          {replyingTo === c._id && (
+              <div className="mt-3 flex gap-2">
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder={`Reply to ${
+                    c.user?.full_name || "User"
+                  }`}
+                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSubmitReply(post._id, c._id);
+                    }
+                  }}
+                />
+
+                <button
+                  onClick={() =>
+                    handleSubmitReply(post._id, c._id)
+                  }
+                  disabled={
+                    replySubmitting || !replyText.trim()
+                  }
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50"
+                >
+                  {replySubmitting ? "..." : "Reply"}
+                </button>
+              </div>
+            )}
 
           {/* =================================================
               LOAD MORE
