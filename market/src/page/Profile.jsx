@@ -409,6 +409,7 @@ export default function Profile() {
 
             <ProfillePostField
               posts={profilePosts}
+              setPosts={setPosts}
               profile={user}
               user={currentUser}
 

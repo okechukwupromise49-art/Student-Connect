@@ -17,6 +17,7 @@ export default function ProfillePostField({
   posts,
   profile,
   user,
+  setPosts,
 
   // Post functions coming from parent
   handleLike,
