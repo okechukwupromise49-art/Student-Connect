@@ -22,7 +22,6 @@ export default function ProfillePostField({
   // Post functions coming from parent
   handleLike,
   handleComment,
-  handleDelete,
   handleDeleteComment,
   handleSharePost,
   handleShareComment,
@@ -131,6 +130,41 @@ export default function ProfillePostField({
     setSubmitting(false);
   }
 };
+
+
+  // =====================================================
+  // DELETE POST
+  // =====================================================
+  const handleDelete = async (postId) => {
+    try {
+      await axios.delete(
+        `${API_URL}/api/posts/${postId}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      setPosts((prevPosts) =>
+        prevPosts.filter(
+          (post) => post._id !== postId
+        )
+      );
+
+      setPostMenu(null);
+
+      toast.success("Post deleted successfully");
+    } catch (error) {
+      console.log(
+        "Delete error:",
+        error.response?.data || error.message
+      );
+
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to delete post"
+      );
+    }
+  };
   // =====================================================
   // POST OWNER
   // =====================================================
