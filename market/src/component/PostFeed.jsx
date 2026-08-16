@@ -238,6 +238,47 @@ export default function PostFeed() {
     }
   };
 
+    const handleSubmitReply = async (postId, commentId) => {
+      const text = replyText.trim();
+      if (!text) return;
+  
+      try {
+        setReplySubmitting(true);
+  
+        const res = await axios.post(
+          `${API_URL}/api/posts/comment/${postId}/reply/${commentId}`,
+          { reply: text },
+          { withCredentials: true }
+        );
+  
+        setPosts((prev) =>
+          prev.map((post) =>
+            post._id === postId
+              ? {
+                  ...post,
+                  comments: post.comments.map((c) =>
+                    c._id === commentId
+                      ? {
+                          ...c,
+                          replies: [...(c.replies || []), res.data.reply],
+                        }
+                      : c
+                  ),
+                }
+              : post
+          )
+        );
+  
+        setReplyText("");
+        setReplyingTo(null);
+        toast.success("Reply added");
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to add reply");
+      } finally {
+        setReplySubmitting(false);
+      }
+    };
+
   const handleShareComment = async (postId, comment) => {
     const shareUrl = `${window.location.origin}/post/${postId}#comment-${comment._id}`;
 
