@@ -93,7 +93,7 @@ export default function ProfillePostField({
       setReplySubmitting(true);
 
       const res = await axios.post(
-        `${API_URL}/api/posts/comment/${postId}/reply/${commentId}`,
+        `${API_URL}/api/posts/comment/${postId}/${commentId}/reply`,
         { reply: text },
         { withCredentials: true }
       );
