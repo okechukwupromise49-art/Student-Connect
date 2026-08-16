@@ -133,7 +133,7 @@ export default function PostFeed() {
 
       const res = await axios.post(
         `${API_URL}/api/posts/comment/${postId}/${commentId}/reply`,
-        { reply: text },
+        {  text },
         { withCredentials: true }
       );
 
