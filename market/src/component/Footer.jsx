@@ -23,7 +23,7 @@ export function Footer() {
     { 
       icon: Users, 
       label: "Connect", 
-      path: "/connect" 
+      path: "/find" 
     },
     { 
       icon: MessageCircle, 
