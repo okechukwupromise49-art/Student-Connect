@@ -272,7 +272,7 @@ router.get("/users", auth, async (req, res) => {
 });
 
 
-router.post("/follow/:userID", auth, async(req,res) => {
+router.post("/follow/:userId", auth, async(req,res) => {
     try {
     const targetId = req.params.userId;
     const currentUserId = req.user._id;

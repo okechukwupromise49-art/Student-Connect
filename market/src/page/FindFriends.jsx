@@ -150,7 +150,7 @@ export default function FindFriends() {
       </div>
 
       {/* Students Count */}
-      <div className="bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm">
+      {/*<div className="bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm">
         <p className="text-xs uppercase tracking-wide text-gray-400 font-medium">
           Students Found
         </p>
@@ -158,7 +158,7 @@ export default function FindFriends() {
         <p className="text-2xl font-bold text-indigo-600 mt-1">
           {filteredUsers.length}
         </p>
-      </div>
+      </div>*/}
 
     </div>
 
