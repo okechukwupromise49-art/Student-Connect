@@ -27,36 +27,36 @@ export default function FindFriends() {
   // ===============================
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        setLoading(true);
+  try {
+    setLoading(true);
 
-        // Get logged-in user
-        const meRes = await axios.get(
-          `${API_URL}/api/register/details`,
-          { withCredentials: true }
-        );
-        setCurrentUser(meRes.data);
+    // Get logged-in user
+    const meRes = await axios.get(
+      `${API_URL}/api/register/details`,
+      { withCredentials: true }
+    );
 
-        // Get all users (except current user)
-        const usersRes = await axios.get(
-          `${API_URL}/api/register/all-users`,
-          { withCredentials: true }
-        );
+    setCurrentUser(meRes.data);
 
-        // Remove current user from list
-        const filtered = usersRes.data.filter(
-          (u) => u._id !== meRes.data._id
-        );
+    // Get students
+    const usersRes = await axios.get(
+      `${API_URL}/api/register/users`,
+      { withCredentials: true }
+    );
 
-        setUsers(filtered);
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to load users");
-      } finally {
-        setLoading(false);
-      }
-    };
+    setUsers(usersRes.data);
 
+  } catch (error) {
+    console.error(
+      "Fetch users error:",
+      error.response?.data || error.message
+    );
+
+    toast.error("Failed to load users");
+  } finally {
+    setLoading(false);
+  }
+};
     fetchData();
   }, []);
 

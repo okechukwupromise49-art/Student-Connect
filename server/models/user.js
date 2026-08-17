@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema(
     bio: {
       type: String,
       trim: true,
-      default: ""
+      default: "",
     },
 
     profileImage: {
@@ -44,7 +44,26 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+
+    // =========================
+    // FOLLOW SYSTEM
+    // =========================
+
+    following: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
+
   {
     timestamps: true,
   }

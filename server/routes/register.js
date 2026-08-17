@@ -244,4 +244,72 @@ router.put("/editProfile",
     } 
 })
 
+router.get("/users", auth, async (req, res) => {
+  try {
+    const users = await User.find({
+      _id: { $ne: req.user.id }
+    }).select(
+      "full_name profileImage department institution followers following"
+    );
+
+    const formattedUsers = users.map((user) => ({
+      ...user.toObject(),
+      isFollowing: user.followers?.some(
+        (id) => id.toString() === req.user.id.toString()
+      ) || false
+    }));
+
+    res.status(200).json(formattedUsers);
+
+  } catch (error) {
+    console.error("Get users error:", error);
+
+    res.status(500).json({
+      message: "Failed to fetch users",
+      error: error.message
+    });
+  }
+});
+
+
+router.post("/follow/:userID", auth, async(req,res) => {
+    try {
+    const targetId = req.params.userId;
+    const currentUserId = req.user._id;
+
+    if (targetId === currentUserId.toString()) {
+      return res.status(400).json({ message: "You can't follow yourself" });
+    }
+
+    const currentUser = await User.findById(currentUserId);
+    const targetUser = await User.findById(targetId);
+
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const alreadyFollowing = currentUser.following?.includes(targetId);
+
+    if (alreadyFollowing) {
+      // Unfollow
+      currentUser.following.pull(targetId);
+      targetUser.followers.pull(currentUserId);
+      await currentUser.save();
+      await targetUser.save();
+
+      return res.json({ isFollowing: false });
+    } else {
+      // Follow
+      currentUser.following.push(targetId);
+      targetUser.followers.push(currentUserId);
+      await currentUser.save();
+      await targetUser.save();
+
+      return res.json({ isFollowing: true });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+})
+
  module.exports = router
