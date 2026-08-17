@@ -67,7 +67,8 @@ export function Welcome() {
               Create Post
             </button>
 
-            <button className="flex items-center gap-3 border border-white/30 hover:border-white/50 text-white font-semibold px-7 py-4 rounded-2xl hover:bg-white/10 active:scale-[0.97] transition-all duration-200 backdrop-blur-sm">
+            <button className="flex items-center gap-3 border border-white/30 hover:border-white/50 text-white font-semibold px-7 py-4 rounded-2xl hover:bg-white/10 active:scale-[0.97] transition-all duration-200 backdrop-blur-sm"
+              onClick={() => navigate("/find")}>
               <Users size={24} />
               Find Friends
             </button>

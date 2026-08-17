@@ -239,7 +239,9 @@ export default function PostFeed() {
   };
 
   
-
+ // =====================================================
+  // SHARE COMMENT
+  // =====================================================
   const handleShareComment = async (postId, comment) => {
     const shareUrl = `${window.location.origin}/post/${postId}#comment-${comment._id}`;
 

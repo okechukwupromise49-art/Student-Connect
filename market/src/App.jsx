@@ -7,6 +7,7 @@ import { Login } from './page/Login'
 import Profile from './page/Profile'
 import { EditProfile } from './page/editProfile'
 import CreatePost from './page/Post'
+import FindFriends from './page/FindFriends'
 
 
 
@@ -21,6 +22,7 @@ function App() {
            <Route path="/profile/:id" element={<Profile/>}/>
            <Route path="/editProfile" element={<EditProfile/>}/>
            <Route path="/create" element={<CreatePost/>}/>
+           <Route path="/find" element={<FindFriends/>}/>
         </Routes>
      
     </div>
