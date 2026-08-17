@@ -272,44 +272,70 @@ router.get("/users", auth, async (req, res) => {
 });
 
 
-router.post("/follow/:userId", auth, async(req,res) => {
-    try {
+router.post("/follow/:userId", auth, async (req, res) => {
+  try {
     const targetId = req.params.userId;
-    const currentUserId = req.user._id;
+    const currentUserId = req.user.id;
 
     if (targetId === currentUserId.toString()) {
-      return res.status(400).json({ message: "You can't follow yourself" });
+      return res.status(400).json({
+        message: "You can't follow yourself",
+      });
     }
 
     const currentUser = await User.findById(currentUserId);
     const targetUser = await User.findById(targetId);
 
-    if (!targetUser) {
-      return res.status(404).json({ message: "User not found" });
+    if (!currentUser) {
+      return res.status(404).json({
+        message: "Current user not found",
+      });
     }
 
-    const alreadyFollowing = currentUser.following?.includes(targetId);
+    if (!targetUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const alreadyFollowing = currentUser.following?.some(
+      (id) => id.toString() === targetId.toString()
+    );
 
     if (alreadyFollowing) {
-      // Unfollow
+      // UNFOLLOW
       currentUser.following.pull(targetId);
       targetUser.followers.pull(currentUserId);
+
       await currentUser.save();
       await targetUser.save();
 
-      return res.json({ isFollowing: false });
-    } else {
-      // Follow
-      currentUser.following.push(targetId);
-      targetUser.followers.push(currentUserId);
-      await currentUser.save();
-      await targetUser.save();
-
-      return res.json({ isFollowing: true });
+      return res.status(200).json({
+        message: "Unfollowed successfully",
+        isFollowing: false,
+      });
     }
+
+    // FOLLOW
+    currentUser.following.push(targetId);
+    targetUser.followers.push(currentUserId);
+
+    await currentUser.save();
+    await targetUser.save();
+
+    return res.status(200).json({
+      message: "Followed successfully",
+      isFollowing: true,
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Follow error:", error);
+
+    res.status(500).json({
+      message: "Failed to follow user",
+      error: error.message,
+    });
   }
-})
+});
 
  module.exports = router
