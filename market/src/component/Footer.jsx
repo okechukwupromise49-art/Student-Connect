@@ -17,7 +17,7 @@ export function Footer() {
   const navItems = [
     { 
       icon: Home, 
-      label: "Home", 
+      label: "Campus", 
       path: "/homepage" 
     },
     { 
