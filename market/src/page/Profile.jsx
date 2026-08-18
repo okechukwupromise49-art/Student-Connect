@@ -60,6 +60,7 @@ export default function Profile() {
         );
 
         setUser(res.data);
+        console.log("PROFILE RESPONSE:", res.data);
       } catch (err) {
         console.error(
           "Error fetching profile:",
