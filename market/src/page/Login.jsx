@@ -88,7 +88,7 @@ export  function Login() {
             <span className="text-3xl">🎓</span>
           </div>
           <h1 className="text-3xl font-bold text-white tracking-tight">
-            Study<span className="text-indigo-400">Connect</span>
+            Student<span className="text-indigo-400">Connect</span>
           </h1>
           <p className="text-slate-400 mt-2">
             Welcome back! Please login to continue

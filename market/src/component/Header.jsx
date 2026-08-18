@@ -67,10 +67,7 @@ export function Header() {
 
           {/* Right Side Icons */}
           <div className="flex items-center gap-3">
-            {/* Search Icon (Mobile) */}
-            <button className="md:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors">
-              <Search size={22} className="text-gray-600" />
-            </button>
+            
 
             {/* Notifications */}
             <button className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
