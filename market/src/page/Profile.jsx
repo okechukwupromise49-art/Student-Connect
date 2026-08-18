@@ -219,6 +219,34 @@ export default function Profile() {
     );
   }
 
+   // ===============================
+    // FOLLOW / UNFOLLOW
+    // ===============================
+    const handleFollow = async (userId) => {
+      try {
+        const res = await axios.post(
+          `${API_URL}/api/register/follow/${userId}`,
+          {},
+          { withCredentials: true }
+        );
+  
+        // Update UI
+        setUsers((prev) =>
+          prev.map((u) =>
+            u._id === userId
+              ? { ...u, isFollowing: res.data.isFollowing }
+              : u
+          )
+        );
+  
+        toast.success(
+          res.data.isFollowing ? "Followed successfully" : "Unfollowed"
+        );
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Action failed");
+      }
+    };
+
   // =====================================================
   // RETURN
   // =====================================================
@@ -299,7 +327,8 @@ export default function Profile() {
                 ) : (
 
                   <>
-                    <button className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium">
+                    <button className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium"
+                      onClick={() => handleFollow(user._id)}>
                       <UserPlus size={18} />
                       Follow
                     </button>
