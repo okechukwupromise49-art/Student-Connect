@@ -329,8 +329,18 @@ export default function Profile() {
                   <>
                     <button className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium"
                       onClick={() => handleFollow(user._id)}>
-                      <UserPlus size={18} />
-                      Follow
+      
+                          {user.isFollowing ? (
+                             <>
+                              <UserCheck size={16} />
+                                   Following
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus size={16} />
+                                 Follow
+                              </>
+                              )}
                     </button>
 
                     <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-medium">
