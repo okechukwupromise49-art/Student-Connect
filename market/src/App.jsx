@@ -8,6 +8,7 @@ import Profile from './page/Profile'
 import { EditProfile } from './page/editProfile'
 import CreatePost from './page/Post'
 import FindFriends from './page/FindFriends'
+import DisplayNot from './component/DisplayNot'
 
 
 
@@ -23,6 +24,7 @@ function App() {
            <Route path="/editProfile" element={<EditProfile/>}/>
            <Route path="/create" element={<CreatePost/>}/>
            <Route path="/find" element={<FindFriends/>}/>
+           <Route path="/display" element={<DisplayNot/>}/>
         </Routes>
      
     </div>
