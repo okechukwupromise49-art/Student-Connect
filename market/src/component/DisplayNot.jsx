@@ -35,8 +35,7 @@ export default function DisplayNot() {
 
           {/* Message */}
           <p className="text-gray-500 leading-relaxed mb-8">
-            Please complete your bio so we can recommend you to people, books,
-            and groups related to your passion.
+            Complete your profile so we can connect you with students, communities, learning resources, and opportunities aligned with your interests.
           </p>
 
           {/* Actions */}

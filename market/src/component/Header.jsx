@@ -23,7 +23,9 @@ export function Header() {
           );
   
           setUser(res.data);
-          console.log(res.data);
+          if (!res.data.bio?.trim()) {
+            navigate("/alert");
+          }
         } catch (error) {
           console.log(error.response?.data || error.message);
         } 

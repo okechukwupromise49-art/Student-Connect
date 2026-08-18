@@ -359,12 +359,12 @@ export default function Profile() {
                         {user.isFollowing ? (
                           <>
                             <UserCheck size={18} />
-                            Following
+                            Connected
                           </>
                         ) : (
                           <>
                             <UserPlus size={18} />
-                            Follow
+                            Connect
                           </>
                         )}
                       </button>

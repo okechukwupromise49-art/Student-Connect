@@ -24,7 +24,7 @@ function App() {
            <Route path="/editProfile" element={<EditProfile/>}/>
            <Route path="/create" element={<CreatePost/>}/>
            <Route path="/find" element={<FindFriends/>}/>
-           <Route path="/display" element={<DisplayNot/>}/>
+           <Route path="/alert" element={<DisplayNot/>}/>
         </Routes>
      
     </div>
