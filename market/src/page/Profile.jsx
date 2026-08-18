@@ -11,6 +11,7 @@ import {
   FileText,
   Download,
   UserPlus,
+  UserCheck,
   MessageCircle,
 } from "lucide-react";
 
@@ -188,6 +189,51 @@ export default function Profile() {
     },
   ];
 
+  const handleFollow = async (userId) => {
+  try {
+    const res = await axios.post(
+      `${API_URL}/api/register/follow/${userId}`,
+      {},
+      { withCredentials: true }
+    );
+
+    // Update the profile user state
+    setUser((prev) => ({
+      ...prev,
+      isFollowing: res.data.isFollowing,
+      followers: res.data.followers || prev.followers,
+    }));
+
+    // Also update currentUser following list if needed
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+
+      const following = prev.following || [];
+      const alreadyFollowing = following.some(
+        (id) => id.toString() === userId.toString()
+      );
+
+      return {
+        ...prev,
+        following: res.data.isFollowing
+          ? alreadyFollowing
+            ? following
+            : [...following, userId]
+          : following.filter(
+              (id) => id.toString() !== userId.toString()
+            ),
+      };
+    });
+
+    toast.success(
+      res.data.isFollowing ? "Followed successfully" : "Unfollowed"
+    );
+  } catch (error) {
+    console.error(error);
+    toast.error(error.response?.data?.message || "Action failed");
+  }
+};
+
   // =====================================================
   // LOADING
   // =====================================================
@@ -220,33 +266,7 @@ export default function Profile() {
     );
   }
 
-   // ===============================
-    // FOLLOW / UNFOLLOW
-    // ===============================
-    const handleFollow = async (userId) => {
-      try {
-        const res = await axios.post(
-          `${API_URL}/api/register/follow/${userId}`,
-          {},
-          { withCredentials: true }
-        );
-  
-        // Update UI
-        setUsers((prev) =>
-          prev.map((u) =>
-            u._id === userId
-              ? { ...u, isFollowing: res.data.isFollowing }
-              : u
-          )
-        );
-  
-        toast.success(
-          res.data.isFollowing ? "Followed successfully" : "Unfollowed"
-        );
-      } catch (error) {
-        toast.error(error.response?.data?.message || "Action failed");
-      }
-    };
+   
 
   // =====================================================
   // RETURN
@@ -328,21 +348,26 @@ export default function Profile() {
                 ) : (
 
                   <>
-                    <button className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium"
-                      onClick={() => handleFollow(user._id)}>
-      
-                          {user.isFollowing ? (
-                             <>
-                              <UserCheck size={16} />
-                                   Following
-                              </>
-                            ) : (
-                              <>
-                                <UserPlus size={16} />
-                                 Follow
-                              </>
-                              )}
-                    </button>
+                    <button
+                        onClick={() => handleFollow(user._id)}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                          user.isFollowing
+                            ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            : "bg-indigo-600 text-white hover:bg-indigo-700"
+                        }`}
+                      >
+                        {user.isFollowing ? (
+                          <>
+                            <UserCheck size={18} />
+                            Following
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus size={18} />
+                            Follow
+                          </>
+                        )}
+                      </button>
 
                     <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-medium">
                       <MessageCircle size={18} />

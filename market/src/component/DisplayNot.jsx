@@ -50,7 +50,6 @@ export default function DisplayNot() {
 
             <button
               onClick={() => {
-                onClose?.();
                 navigate("/editProfile");
               }}
               className="flex-1 px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all"
