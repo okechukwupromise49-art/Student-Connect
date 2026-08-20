@@ -245,7 +245,7 @@ export default function Profile() {
       <div className="fixed inset-0 flex flex-col items-center justify-center bg-white">
       <img
         src={studySpher}
-        alt="Star Tech"
+        alt="campus sphere"
         className="star-loader"
       />
 
