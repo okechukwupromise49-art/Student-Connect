@@ -168,6 +168,16 @@ export default function Profile() {
     currentUser._id?.toString() ===
       user._id?.toString();
 
+
+  const isFollowing =
+  user?.isFollowing === true ||
+  user?.followers?.some(
+    (id) => id?.toString() === currentUser?._id?.toString()
+  ) ||
+  currentUser?.following?.some(
+    (id) => id?.toString() === user?._id?.toString()
+  );
+
   // =====================================================
   // TABS
   // =====================================================
