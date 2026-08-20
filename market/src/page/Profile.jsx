@@ -49,7 +49,6 @@ export default function Profile() {
   // =====================================================
   // FETCH PROFILE
   // =====================================================
-
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -60,7 +59,7 @@ export default function Profile() {
         );
 
         setUser(res.data);
-        console.log("PROFILE RESPONSE:", res.data);
+        
       } catch (err) {
         console.error(
           "Error fetching profile:",
@@ -76,6 +75,7 @@ export default function Profile() {
     }
   }, [id]);
 
+  console.log("PROFILE RESPONSE:", res.data);
   // =====================================================
   // FETCH CURRENT LOGGED-IN USER
   // =====================================================
@@ -241,15 +241,17 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-white">
+      <img
+        src={studySpher}
+        alt="Star Tech"
+        className="star-loader"
+      />
 
-          <p className="mt-4 text-gray-500">
-            Loading profile...
-          </p>
-        </div>
-      </div>
+      <p className="mt-4 text-sm text-gray-500">
+        Loading...
+      </p>
+    </div>
     );
   }
 
