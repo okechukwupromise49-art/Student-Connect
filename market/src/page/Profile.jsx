@@ -59,6 +59,7 @@ export default function Profile() {
         );
 
         setUser(res.data);
+         console.log("PROFILE RESPONSE:", res.data);
         
       } catch (err) {
         console.error(
@@ -75,7 +76,7 @@ export default function Profile() {
     }
   }, [id]);
 
-  console.log("PROFILE RESPONSE:", res.data);
+  
   // =====================================================
   // FETCH CURRENT LOGGED-IN USER
   // =====================================================
