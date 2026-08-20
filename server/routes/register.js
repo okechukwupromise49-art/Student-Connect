@@ -146,6 +146,8 @@ router.get("/details", auth, async (req, res) => {
 });
 
 
+
+
 router.get("/profile/:id", auth, async (req, res) => {
   try {
     const profileUser = await User.findById(req.params.id)
@@ -153,14 +155,16 @@ router.get("/profile/:id", auth, async (req, res) => {
       .lean();
 
     if (!profileUser) {
-      return res.status(404).json({
-        message: "User not found",
-      });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const isFollowing = profileUser.followers?.some(
-      (id) => id.toString() === req.user.id.toString()
-    );
+    let isFollowing = false;
+
+    if (req.user?.id) {
+      isFollowing = profileUser.followers?.some(
+        (id) => id.toString() === req.user.id.toString()
+      );
+    }
 
     res.json({
       ...profileUser,
@@ -168,9 +172,7 @@ router.get("/profile/:id", auth, async (req, res) => {
       connections: profileUser.followers?.length || 0,
     });
   } catch (err) {
-    res.status(500).json({
-      error: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 });
 
