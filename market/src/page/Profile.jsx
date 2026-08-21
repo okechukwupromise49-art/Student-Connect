@@ -266,6 +266,12 @@ export default function Profile() {
   }
 };
 
+useEffect(() => {
+  console.log("MY PROFILE USER:", user);
+  console.log("MY FOLLOWERS:", user?.followers);
+  console.log("MY FOLLOWERS LENGTH:", user?.followers?.length);
+}, [user]);
+
   // =====================================================
   // LOADING
   // =====================================================
