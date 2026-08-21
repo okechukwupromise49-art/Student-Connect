@@ -22,6 +22,7 @@ import { toast } from "react-toastify";
 
 import usePostFunctions from "../../PostFunction";
 import ProfillePostField from "../component/UserPostFeed";
+import { PageLoader } from "../component/Loader";
 
 export default function Profile() {
   const { id } = useParams();
@@ -51,29 +52,34 @@ export default function Profile() {
   // =====================================================
   useEffect(() => {
     const fetchUser = async () => {
-      try {
-        setLoading(true);
+  try {
+    setLoading(true);
 
-        const res = await axios.get(
-          `${API_URL}/api/register/profile/${id}`
-        );
+    console.log("PROFILE URL:", `${API_URL}/api/register/profile/${id}`);
+    console.log("PROFILE ID FROM URL:", id);
 
-        setUser(res.data);
-         console.log("PROFILE RESPONSE:", res.data);
-        
-      } catch (err) {
-        console.error(
-          "Error fetching profile:",
-          err
-        );
-      } finally {
-        setLoading(false);
+    const res = await axios.get(
+      `${API_URL}/api/register/profile/${id}`,
+      {
+        withCredentials: true,
       }
-    };
+    );
 
-    if (id) {
-      fetchUser();
-    }
+    console.log("PROFILE RESPONSE:", res.data);
+
+    setUser(res.data);
+
+  } catch (err) {
+    console.error(
+      "❌ PROFILE FETCH ERROR:",
+      err.response?.status,
+      err.response?.data,
+      err.message
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   }, [id]);
 
   
@@ -252,17 +258,7 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center bg-white">
-      <img
-        src={studySpher}
-        alt="campus sphere"
-        className="star-loader"
-      />
-
-      <p className="mt-4 text-sm text-gray-500">
-        Loading...
-      </p>
-    </div>
+      <PageLoader/>
     );
   }
 
