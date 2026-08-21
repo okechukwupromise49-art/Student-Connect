@@ -15,6 +15,7 @@ import { toast } from "react-toastify";
 import API_URL from "../Api";
 import { MarketHeader } from "./MarketHeader";
 import studySpher from "../assets/studySpher.jpeg";
+import { PageLoader } from "./Loader";
 
 export default function MarketHome() {
   const navigate = useNavigate();
@@ -171,17 +172,7 @@ export default function MarketHome() {
 
         {/* Loading */}
         {loading ? (
-          <div className="fixed inset-0 flex flex-col items-center justify-center bg-white">
-                <img
-                  src={studySpher}
-                  alt="campus sphere"
-                  className="star-loader"
-                />
-          
-                <p className="mt-4 text-sm text-gray-500">
-                  Loading...
-                </p>
-              </div>
+          <PageLoader/>
         ) : filteredItems.length === 0 ? (
           /* Empty state */
           <div className="bg-white rounded-3xl border border-gray-100 p-14 text-center shadow-sm">
