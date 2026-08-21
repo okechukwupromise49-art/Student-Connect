@@ -5,7 +5,8 @@ import {
   Users2, 
   ShoppingBag, 
   User, 
-  MessageCircle
+  MessageCircle,
+  ChartBar
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -22,13 +23,13 @@ export function MarketFooter() {
     },
     { 
       icon: Users, 
-      label: "Connect", 
-      path: "/fnd" 
+      label: "You", 
+      path: "/You" 
     },
     { 
-      icon: MessageCircle, 
-      label: "Meassage", 
-      path: `/message` 
+      icon: Cart, 
+      label: "Cart", 
+      path: `/cart` 
     },
     
     
