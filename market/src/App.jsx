@@ -9,6 +9,7 @@ import { EditProfile } from './page/editProfile'
 import CreatePost from './page/Post'
 import FindFriends from './page/FindFriends'
 import DisplayNot from './component/DisplayNot'
+import MarketHome from './component/MarketHome'
 
 
 
@@ -25,6 +26,7 @@ function App() {
            <Route path="/create" element={<CreatePost/>}/>
            <Route path="/find" element={<FindFriends/>}/>
            <Route path="/alert" element={<DisplayNot/>}/>
+           <Route path="/market" element={<MarketHome/>}/>
         </Routes>
      
     </div>
