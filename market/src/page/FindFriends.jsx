@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import studySpher from "../assets/studySpher.jpeg";
 import { toast } from "react-toastify";
 import API_URL from "../Api";
+import { PageLoader } from "../component/Loader";
 
 export default function FindFriends() {
   const navigate = useNavigate();
@@ -118,18 +119,8 @@ export default function FindFriends() {
 
   if (loading) {
     return (
-  <div className="fixed rounder-2xl inset-0 flex flex-col items-center justify-center bg-white">
-      <img
-        src={studySpher}
-        alt="campus sphere"
-        className="star-loader"
-      />
-
-      <p className="mt-4 text-sm text-gray-500">
-        Loading...
-      </p>
-    </div>
       
+      <PageLoader/>
     );
   }
 
