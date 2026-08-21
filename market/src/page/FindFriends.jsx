@@ -118,7 +118,7 @@ export default function FindFriends() {
 
   if (loading) {
     return (
-  <div className="fixed inset-0 flex flex-col items-center justify-center bg-white">
+  <div className="fixed rounder-2xl inset-0 flex flex-col items-center justify-center bg-white">
       <img
         src={studySpher}
         alt="campus sphere"
