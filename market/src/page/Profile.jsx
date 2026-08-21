@@ -51,36 +51,50 @@ export default function Profile() {
   // FETCH PROFILE
   // =====================================================
   useEffect(() => {
-    const fetchUser = async () => {
-  try {
-    setLoading(true);
+  const fetchUser = async () => {
+    try {
+      setLoading(true);
 
-    console.log("PROFILE URL:", `${API_URL}/api/register/profile/${id}`);
-    console.log("PROFILE ID FROM URL:", id);
+      console.log(
+        "PROFILE URL:",
+        `${API_URL}/api/register/profile/${id}`
+      );
 
-    const res = await axios.get(
-      `${API_URL}/api/register/profile/${id}`,
-      {
-        withCredentials: true,
-      }
-    );
+      console.log(
+        "PROFILE ID FROM URL:",
+        id
+      );
 
-    console.log("PROFILE RESPONSE:", res.data);
+      const res = await axios.get(
+        `${API_URL}/api/register/profile/${id}`,
+        {
+          withCredentials: true,
+        }
+      );
 
-    setUser(res.data);
+      console.log(
+        "PROFILE RESPONSE:",
+        res.data
+      );
 
-  } catch (err) {
-    console.error(
-      "❌ PROFILE FETCH ERROR:",
-      err.response?.status,
-      err.response?.data,
-      err.message
-    );
-  } finally {
-    setLoading(false);
+      setUser(res.data);
+
+    } catch (err) {
+      console.error(
+        "❌ PROFILE FETCH ERROR:",
+        err.response?.status,
+        err.response?.data,
+        err.message
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (id) {
+    fetchUser();
   }
-};
-  }, [id]);
+}, [id]);
 
   
   // =====================================================
