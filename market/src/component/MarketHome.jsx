@@ -16,6 +16,7 @@ import API_URL from "../Api";
 import { MarketHeader } from "./MarketHeader";
 import studySpher from "../assets/studySpher.jpeg";
 import { PageLoader } from "./Loader";
+import { MarketFooter } from "./MarketFooter";
 
 export default function MarketHome() {
   const navigate = useNavigate();
@@ -261,6 +262,8 @@ export default function MarketHome() {
           </div>
         )}
       </div>
+
+      <MarketFooter/>
     </div>
   );
 }

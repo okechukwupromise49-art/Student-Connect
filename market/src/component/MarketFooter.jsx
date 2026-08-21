@@ -10,7 +10,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
 
-export function Footer() {
+export function MarketFooter() {
   const location = useLocation();
   
 
