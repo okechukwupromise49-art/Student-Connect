@@ -171,9 +171,17 @@ export default function MarketHome() {
 
         {/* Loading */}
         {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <div className="fixed inset-0 flex flex-col items-center justify-center bg-white">
+                <img
+                  src={studySpher}
+                  alt="campus sphere"
+                  className="star-loader"
+                />
+          
+                <p className="mt-4 text-sm text-gray-500">
+                  Loading...
+                </p>
+              </div>
         ) : filteredItems.length === 0 ? (
           /* Empty state */
           <div className="bg-white rounded-3xl border border-gray-100 p-14 text-center shadow-sm">
