@@ -146,55 +146,23 @@ router.get("/details", auth, async (req, res) => {
 });
 
 
+router.get("/profile/:id", async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select("-password");
 
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found",
+            });
+        }
 
-router.get("/profile/:id", auth, async (req, res) => {
-  try {
-    console.log("================================");
-    console.log("PROFILE ID:", req.params.id);
-    console.log("LOGGED USER:", req.user);
-    console.log("================================");
+        res.json(user);
 
-    const profileUser = await User.findById(req.params.id)
-      .select("-password")
-      .lean();
-
-    console.log("PROFILE USER FOUND:", profileUser);
-
-    if (!profileUser) {
-      console.log("❌ USER NOT FOUND IN DATABASE");
-
-      return res.status(404).json({
-        message: "User not found",
-        requestedId: req.params.id,
-      });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message,
+        });
     }
-
-    let isFollowing = false;
-
-    if (req.user?.id) {
-      isFollowing =
-        profileUser.followers?.some(
-          (id) =>
-            id.toString() ===
-            req.user.id.toString()
-        ) || false;
-    }
-
-    res.json({
-      ...profileUser,
-      isFollowing,
-      connections:
-        profileUser.followers?.length || 0,
-    });
-
-  } catch (err) {
-    console.error("❌ PROFILE ERROR:", err);
-
-    res.status(500).json({
-      error: err.message,
-    });
-  }
 });
 
 router.put("/editProfile", 
