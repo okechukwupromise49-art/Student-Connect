@@ -428,7 +428,10 @@ useEffect(() => {
 
               <div className="text-center">
                 <p className="text-xl font-bold text-gray-900">
-                  {user.followers?.length || 0}
+                  {user?.followers?.length || 0}
+                </p>
+                <p className="text-xl font-bold text-gray-900">
+                  {user?.following?.length || 0}
                 </p>
 
                 <p className="text-sm text-gray-500">
