@@ -1,3 +1,5 @@
+import studySpher from "../assets/studySpher.jpeg";
+
 export function PageLoader(){
     return(
         <>
