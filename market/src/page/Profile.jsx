@@ -430,12 +430,21 @@ useEffect(() => {
                 <p className="text-xl font-bold text-gray-900">
                   {user?.followers?.length || 0}
                 </p>
-                <p className="text-xl font-bold text-gray-900">
-                  {user?.following?.length || 0}
-                </p>
+                
 
                 <p className="text-sm text-gray-500">
                   Connections
+                </p>
+              </div>
+
+              <div className="text-center">
+                <p className="text-xl font-bold text-gray-900">
+                  {user?.followers?.length || 0}
+                </p>
+                
+
+                <p className="text-sm text-gray-500">
+                  Connecting
                 </p>
               </div>
 

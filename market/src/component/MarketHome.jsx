@@ -93,7 +93,7 @@ export default function MarketHome() {
             </div>
 
             <button
-              onClick={() => navigate("/market/sell")}
+              onClick={() => navigate("/market/reg")}
               className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white text-indigo-700 font-semibold rounded-2xl hover:bg-indigo-50 transition-all shadow-lg"
             >
               <Plus size={20} />

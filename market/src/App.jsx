@@ -10,6 +10,7 @@ import CreatePost from './page/Post'
 import FindFriends from './page/FindFriends'
 import DisplayNot from './component/DisplayNot'
 import MarketHome from './component/MarketHome'
+import MarketRegister from './component/MarketRegister'
 
 
 
@@ -27,6 +28,7 @@ function App() {
            <Route path="/find" element={<FindFriends/>}/>
            <Route path="/alert" element={<DisplayNot/>}/>
            <Route path="/market" element={<MarketHome/>}/>
+           <Route path="/market/reg" element={<MarketRegister/>}/>
         </Routes>
      
     </div>
