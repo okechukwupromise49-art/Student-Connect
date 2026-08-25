@@ -40,7 +40,7 @@ app.use(cookieParser());
 
 app.use("/api/register", registerRoutes);
 app.use("/api/posts", postRoutes);
-app.use("/api/market", marketRoutes);
+app.use("/api/market", marketUserRoutes);
 
 app.get("/", (req, res) => {
   res.send("StudyConnect API is running...");
