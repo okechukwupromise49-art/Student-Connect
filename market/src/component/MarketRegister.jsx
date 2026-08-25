@@ -51,7 +51,7 @@ export default function MarketRegister() {
       setLoading(true);
 
       await axios.post(
-        `${API_URL}/api/market/register-seller`,
+        `${API_URL}/api/market/marketRegister`,
         formData,
         { withCredentials: true }
       );
@@ -134,7 +134,7 @@ export default function MarketRegister() {
           </h1>
 
           <p className="text-gray-500 mt-2 max-w-sm mx-auto leading-relaxed">
-            Register correctly to start selling notes, PDFs, and courses on
+            Register correctly to start selling notes, items, gadget, PDFs, and courses on
             Student Market.
           </p>
         </div>

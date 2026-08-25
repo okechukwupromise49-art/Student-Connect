@@ -2,6 +2,14 @@ const mongoose = require("mongoose");
 
 const marketUserSchema = new mongoose.Schema(
   {
+    // Link to main StudyConnect account
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true, // one seller profile per user
+    },
+
     full_name: {
       type: String,
       required: true,
@@ -17,7 +25,7 @@ const marketUserSchema = new mongoose.Schema(
     },
 
     phone_number: {
-      type: Number,
+      type: String, // better than Number
       required: true,
       trim: true,
     },
@@ -30,27 +38,35 @@ const marketUserSchema = new mongoose.Schema(
 
     university: {
       type: String,
+      required: true,
       trim: true,
-      required: true,
     },
 
-    origin: {
+    state_of_origin: {
       type: String,
       required: true,
+      trim: true,
     },
 
-    adress: {
+    address: {
       type: String,
       required: true,
+      trim: true,
     },
 
-    
-    
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
-
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("marketUser", marketUserSchema);
+module.exports = mongoose.model("MarketUser", marketUserSchema);
