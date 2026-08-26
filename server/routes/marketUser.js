@@ -6,6 +6,7 @@ const auth = require("../middleware/auth")
 router.post("/marketRegister", auth, async (req, res) => {
   try {
     console.log("📦 MARKET REGISTER BODY:", req.body);
+    console.log("🔐 AUTH USER:", req.user);
 
     const {
       full_name,
@@ -40,6 +41,7 @@ router.post("/marketRegister", auth, async (req, res) => {
     }
 
     const marketUser = new MarketUser({
+      user: req.user.id,
       department,
       university,
       full_name,
