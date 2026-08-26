@@ -58,10 +58,19 @@ export default function MarketRegister() {
 
       toast.success("Seller account created successfully");
       navigate("/market/sell");
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to register as seller"
-      );
+    }  catch (error) {
+  console.error("❌ MARKET REGISTER ERROR:", {
+    status: error.response?.status,
+    data: error.response?.data,
+    message: error.message,
+  });
+
+  toast.error(
+    error.response?.data?.message ||
+    error.response?.data?.error ||
+    "Failed to register as seller"
+  );
+}
     } finally {
       setLoading(false);
     }
