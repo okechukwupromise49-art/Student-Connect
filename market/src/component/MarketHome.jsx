@@ -22,6 +22,7 @@ export default function MarketHome() {
   const navigate = useNavigate();
 
   const [items, setItems] = useState([]);
+  const [marketUser, setMarketUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -55,6 +56,25 @@ export default function MarketHome() {
     fetchItems();
   }, []);
 
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(`${API_URL}/api/market/marketUser`, {
+          withCredentials: true,
+        });
+        setMarketUser(res.data);
+      } catch
+       (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserDetails();
+  }, []);
+
   const filteredItems = items
     .filter((item) => {
       const matchesSearch =
@@ -80,6 +100,8 @@ export default function MarketHome() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
 
         {/* Hero / Seller CTA */}
+
+
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 p-6 sm:p-8 mb-8 shadow-xl shadow-indigo-200">
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
             <div>

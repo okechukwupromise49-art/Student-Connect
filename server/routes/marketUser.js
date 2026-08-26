@@ -77,4 +77,28 @@ router.post("/marketRegister", auth, async (req, res) => {
   }
 });
 
+
+router.get("/marketUser", auth, async (req, res) => {
+  try {
+    const marketUser = await MarketUser.findOne({
+      user: req.user.id
+    });
+
+    /*if (!marketUser) {
+      return res.status(404).json({
+        message: "Seller account not found"
+      });
+    }*/
+
+    res.json(marketUser);
+
+  } catch (err) {
+    console.error("❌ MARKET USER ERROR:", err);
+
+    res.status(500).json({
+      message: "Server error",
+      error: err.message
+    });
+  }
+});
 module.exports = router;
