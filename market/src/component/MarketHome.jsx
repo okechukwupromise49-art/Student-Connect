@@ -63,32 +63,34 @@ export default function MarketHome() {
   // FETCH MARKET DATA
   // =========================
   useEffect(() => {
-    const fetchMarketData = async () => {
-      try {
-        setLoading(true);
+  const fetchMarketUser = async () => {
+    try {
+      setLoading(true);
 
-        const [itemsResponse, userResponse] = await Promise.all([
-          axios.get(`${API_URL}/api/market/items`, {
-            withCredentials: true,
-          }),
-
-          axios.get(`${API_URL}/api/market/marketUser`, {
-            withCredentials: true,
-          }),
-        ]);
-
-        setItems(itemsResponse.data || []);
-        setMarketUser(userResponse.data || null);
-      } catch (error) {
-        console.error("❌ MARKET HOME ERROR:", error);
-
-        // If seller profile doesn't exist, that's okay.
-        if (error.response?.status === 404) {
-          setMarketUser(null);
+      const res = await axios.get(
+        `${API_URL}/api/market/marketUser`,
+        {
+          withCredentials: true,
         }
+      );
 
+      setMarketUser(res.data || null);
+
+    } catch (error) {
+      console.error("❌ MARKET USER ERROR:", error);
+
+      if (error.response?.status === 404) {
+        setMarketUser(null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchMarketUser();
+}, []);
         // Still try to load items if seller profile is missing
-        try {
+        {/*try {
           const itemsResponse = await axios.get(
             `${API_URL}/api/market/items`,
             {
@@ -107,7 +109,7 @@ export default function MarketHome() {
     };
 
     fetchMarketData();
-  }, []);
+  }, []);*/}
 
   // =========================
   // FILTER + SORT
