@@ -11,6 +11,7 @@ import FindFriends from './page/FindFriends'
 import DisplayNot from './component/DisplayNot'
 import MarketHome from './component/MarketHome'
 import MarketRegister from './component/MarketRegister'
+import { SellItem } from './component/SellItem'
 
 
 
@@ -29,6 +30,7 @@ function App() {
            <Route path="/alert" element={<DisplayNot/>}/>
            <Route path="/market" element={<MarketHome/>}/>
            <Route path="/market/reg" element={<MarketRegister/>}/>
+           <Route path="/market/sell" element={<SellItem/>}/>
         </Routes>
      
     </div>
