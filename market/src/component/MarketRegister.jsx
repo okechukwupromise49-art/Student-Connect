@@ -58,7 +58,7 @@ export default function MarketRegister() {
 
       toast.success("Seller account created successfully");
       navigate("/market/sell");
-    }  catch (error) {
+    } catch (error) {
   console.error("❌ MARKET REGISTER ERROR:", {
     status: error.response?.status,
     data: error.response?.data,
@@ -70,8 +70,7 @@ export default function MarketRegister() {
     error.response?.data?.error ||
     "Failed to register as seller"
   );
-}
-    } finally {
+} finally {
       setLoading(false);
     }
   };
