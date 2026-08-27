@@ -9,6 +9,7 @@ const cookieParser = require("cookie-parser");
 const registerRoutes = require("./routes/register");
 const postRoutes = require("./routes/post");
 const marketUserRoutes = require("./routes/marketUser");
+const sellItemRoutes = require("./routes/sellItem");
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
@@ -43,6 +44,7 @@ app.use(cookieParser());
 app.use("/api/register", registerRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/market", marketUserRoutes);
+app.use("/api/market", sellItemRoutes);
 
 app.get("/", (req, res) => {
   res.send("StudyConnect API is running...");
