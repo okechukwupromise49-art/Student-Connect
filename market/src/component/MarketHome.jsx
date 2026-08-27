@@ -4,10 +4,8 @@ import {
   Search,
   ShoppingBag,
   Plus,
-  Star,
   Filter,
   BookOpen,
-  FileText,
   Smartphone,
   Shirt,
   Sparkles,
@@ -15,8 +13,10 @@ import {
   Store,
   Package,
   Zap,
+  ShoppingCart,
 } from "lucide-react";
 import axios from "axios";
+import { toast } from "react-toastify";
 import API_URL from "../Api";
 import { MarketHeader } from "./MarketHeader";
 import studySpher from "../assets/studySpher.jpeg";
@@ -33,7 +33,15 @@ export default function MarketHome() {
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("newest");
 
-  // General campus market categories
+  // Cart (saved in localStorage)
+  const [cart, setCart] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("market_cart")) || [];
+    } catch {
+      return [];
+    }
+  });
+
   const categories = [
     { id: "all", label: "All", icon: ShoppingBag },
     { id: "study", label: "Study", icon: BookOpen },
@@ -43,15 +51,17 @@ export default function MarketHome() {
     { id: "other", label: "Other", icon: Package },
   ];
 
-  // =========================
-  // FETCH MARKET USER + ITEMS
-  // =========================
+  // Keep cart in localStorage
+  useEffect(() => {
+    localStorage.setItem("market_cart", JSON.stringify(cart));
+  }, [cart]);
+
+  // Fetch market user + items
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
         setLoading(true);
 
-        // 1. Check if current user is a seller
         try {
           const userRes = await axios.get(
             `${API_URL}/api/market/marketUser`,
@@ -66,12 +76,10 @@ export default function MarketHome() {
           }
         }
 
-        // 2. Always load market items
         try {
-          const itemsRes = await axios.get(
-            `${API_URL}/api/market/items`,
-            { withCredentials: true }
-          );
+          const itemsRes = await axios.get(`${API_URL}/api/market/items`, {
+            withCredentials: true,
+          });
           setItems(itemsRes.data || []);
         } catch (err) {
           console.error("Items error:", err);
@@ -86,8 +94,47 @@ export default function MarketHome() {
   }, []);
 
   // =========================
-  // FILTER + SORT
+  // ADD TO CART
   // =========================
+  const handleAddToCart = (e, item) => {
+    e.stopPropagation(); // don't open item details
+
+    const stock = item.quantity ?? 1;
+    const existing = cart.find((c) => c._id === item._id);
+
+    if (existing) {
+      if (existing.cartQty >= stock) {
+        toast.info("No more stock available");
+        return;
+      }
+
+      setCart((prev) =>
+        prev.map((c) =>
+          c._id === item._id ? { ...c, cartQty: c.cartQty + 1 } : c
+        )
+      );
+      toast.success("Cart updated");
+    } else {
+      setCart((prev) => [
+        ...prev,
+        {
+          _id: item._id,
+          title: item.title,
+          price: item.price,
+          image: item.thumbnail || item.files?.[0]?.url || null,
+          stock,
+          cartQty: 1,
+          category: item.category,
+          author: item.author || item.seller,
+        },
+      ]);
+      toast.success("Added to cart");
+    }
+  };
+
+  const cartCount = cart.reduce((sum, c) => sum + (c.cartQty || 1), 0);
+
+  // Filter + sort
   const filteredItems = items
     .filter((item) => {
       const query = search.toLowerCase().trim();
@@ -101,7 +148,6 @@ export default function MarketHome() {
       const matchesCategory =
         category === "all" || item.category === category;
 
-      // Hide sold-out items just in case
       const inStock = (item.quantity ?? 1) > 0;
 
       return matchesSearch && matchesCategory && inStock;
@@ -114,13 +160,10 @@ export default function MarketHome() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 pb-28">
-      <MarketHeader />
+      <MarketHeader cartCount={cartCount} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
-
-        {/* =========================
-            HERO
-        ========================== */}
+        {/* HERO */}
         <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 p-6 sm:p-8 lg:p-10 mb-8 shadow-xl shadow-indigo-200/50">
           <div className="absolute -right-16 -top-16 w-56 h-56 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-purple-400/20 rounded-full blur-3xl" />
@@ -159,11 +202,11 @@ export default function MarketHome() {
               )}
             </div>
 
-            <div className="shrink-0">
+            <div className="shrink-0 flex flex-col sm:flex-row gap-3">
               {marketUser ? (
                 <button
                   onClick={() => navigate("/market/sell")}
-                  className="group w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 bg-white text-indigo-700 font-bold rounded-2xl hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  className="group flex items-center justify-center gap-3 px-6 py-4 bg-white text-indigo-700 font-bold rounded-2xl hover:bg-indigo-50 transition-all shadow-lg"
                 >
                   <Store size={20} />
                   <span>Sell an Item</span>
@@ -175,7 +218,7 @@ export default function MarketHome() {
               ) : (
                 <button
                   onClick={() => navigate("/market/reg")}
-                  className="group w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 bg-white text-indigo-700 font-bold rounded-2xl hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  className="group flex items-center justify-center gap-3 px-6 py-4 bg-white text-indigo-700 font-bold rounded-2xl hover:bg-indigo-50 transition-all shadow-lg"
                 >
                   <Plus size={20} />
                   <span>Become a Seller</span>
@@ -189,9 +232,7 @@ export default function MarketHome() {
           </div>
         </section>
 
-        {/* =========================
-            SEARCH + FILTERS
-        ========================== */}
+        {/* SEARCH + FILTERS */}
         <section className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-4 sm:p-5 mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="relative flex-1">
@@ -213,7 +254,7 @@ export default function MarketHome() {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="w-full lg:w-auto px-4 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-sm font-medium outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                className="w-full lg:w-auto px-4 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-sm font-medium outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="newest">Newest</option>
                 <option value="price-low">Price: Low to High</option>
@@ -245,9 +286,7 @@ export default function MarketHome() {
           </div>
         </section>
 
-        {/* =========================
-            RESULTS HEADER
-        ========================== */}
+        {/* RESULTS HEADER */}
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -256,7 +295,7 @@ export default function MarketHome() {
                 : categories.find((c) => c.id === category)?.label}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Everything students need — on campus
+              Everything students need on campus
             </p>
           </div>
 
@@ -268,9 +307,7 @@ export default function MarketHome() {
           </div>
         </div>
 
-        {/* =========================
-            CONTENT
-        ========================== */}
+        {/* CONTENT */}
         {loading ? (
           <PageLoader />
         ) : filteredItems.length === 0 ? (
@@ -278,13 +315,11 @@ export default function MarketHome() {
             <div className="w-20 h-20 mx-auto mb-5 rounded-3xl bg-indigo-50 flex items-center justify-center">
               <ShoppingBag className="text-indigo-500" size={34} />
             </div>
-
             <h3 className="text-xl font-bold text-gray-900">No items found</h3>
             <p className="text-gray-500 mt-2 max-w-md mx-auto text-sm leading-relaxed">
               Nothing matches your search yet. Try another keyword or be the
               first to list something.
             </p>
-
             {marketUser && (
               <button
                 onClick={() => navigate("/market/sell")}
@@ -300,6 +335,7 @@ export default function MarketHome() {
             {filteredItems.map((item) => {
               const qty = item.quantity ?? 1;
               const lowStock = qty > 0 && qty <= 3;
+              const inCart = cart.find((c) => c._id === item._id);
 
               return (
                 <article
@@ -321,23 +357,20 @@ export default function MarketHome() {
                       </div>
                     )}
 
-                    {/* Category */}
                     <div className="absolute top-3 left-3">
-                      <span className="px-2.5 py-1 rounded-full bg-white/90 backdrop-blur text-[11px] font-bold text-indigo-700 uppercase tracking-wide shadow-sm">
+                      <span className="px-2.5 py-1 rounded-full bg-white/90 text-[11px] font-bold text-indigo-700 uppercase tracking-wide shadow-sm">
                         {item.category || "Other"}
                       </span>
                     </div>
 
-                    {/* Price */}
                     <div className="absolute top-3 right-3">
-                      <span className="px-3 py-1.5 rounded-full bg-white/95 backdrop-blur text-sm font-bold text-indigo-700 shadow-sm">
+                      <span className="px-3 py-1.5 rounded-full bg-white/95 text-sm font-bold text-indigo-700 shadow-sm">
                         {Number(item.price) === 0
                           ? "Free"
                           : `₦${Number(item.price).toLocaleString()}`}
                       </span>
                     </div>
 
-                    {/* Low stock badge */}
                     {lowStock && (
                       <div className="absolute bottom-3 left-3">
                         <span className="px-2.5 py-1 rounded-full bg-amber-500 text-white text-[11px] font-bold shadow-sm">
@@ -357,8 +390,8 @@ export default function MarketHome() {
                       {item.description}
                     </p>
 
-                    {/* Quantity + Seller */}
-                    <div className="flex items-center gap-2 mt-5 pt-4 border-t border-gray-100">
+                    {/* Seller + Stock */}
+                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
                       <img
                         src={
                           item.author?.profileImage ||
@@ -393,6 +426,21 @@ export default function MarketHome() {
                         </p>
                       </div>
                     </div>
+
+                    {/* ADD TO CART BUTTON */}
+                    <button
+                      onClick={(e) => handleAddToCart(e, item)}
+                      className={`mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                        inCart
+                          ? "bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100"
+                          : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200"
+                      }`}
+                    >
+                      <ShoppingCart size={16} />
+                      {inCart
+                        ? `In cart (${inCart.cartQty})`
+                        : "Add to Cart"}
+                    </button>
                   </div>
                 </article>
               );
@@ -401,7 +449,7 @@ export default function MarketHome() {
         )}
       </main>
 
-      <MarketFooter />
+      <MarketFooter cartCount={cartCount} />
     </div>
   );
 }
