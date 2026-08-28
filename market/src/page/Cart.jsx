@@ -11,14 +11,17 @@ import {
 import { toast } from "react-toastify";
 import axios from "axios";
 import API_URL from "../Api";
-import { MarketHeader }  from "../component/MarketHeader";
+import { MarketHeader } from "../component/MarketHeader";
 import { MarketFooter } from "../component/MarketFooter";
 
 export default function CartPage() {
   const navigate = useNavigate();
+
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("pod"); // pod | online
+  const [meetupNote, setMeetupNote] = useState("");
 
   const fetchCart = async () => {
     try {
@@ -40,76 +43,79 @@ export default function CartPage() {
   }, []);
 
   const updateQty = async (productId, quantity) => {
-  try {
-    const res = await axios.patch(
-      `${API_URL}/api/market/update/${productId}`,
-      { quantity },
-      { withCredentials: true }
-    );
-    setCart(res.data.cart);
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to update");
-  }
-};
+    try {
+      const res = await axios.patch(
+        `${API_URL}/api/market/update/${productId}`,
+        { quantity },
+        { withCredentials: true }
+      );
+      setCart(res.data.cart);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update");
+    }
+  };
 
-const removeItem = async (productId) => {
-  try {
-    const res = await axios.delete(
-      `${API_URL}/api/market/remove/${productId}`,
-      { withCredentials: true }
-    );
-    setCart(res.data.cart);
-    toast.success("Removed from cart");
-  } catch (error) {
-    toast.error("Failed to remove item");
-  }
-};
+  const removeItem = async (productId) => {
+    try {
+      const res = await axios.delete(
+        `${API_URL}/api/market/remove/${productId}`,
+        { withCredentials: true }
+      );
+      setCart(res.data.cart);
+      toast.success("Removed from cart");
+    } catch (error) {
+      toast.error("Failed to remove item");
+    }
+  };
 
-const clearCart = async () => {
-  try {
-    const res = await axios.delete(`${API_URL}/api/market/clear`, {
-      withCredentials: true,
-    });
-    setCart(res.data.cart);
-    toast.success("Cart cleared");
-  } catch (error) {
-    toast.error("Failed to clear cart");
-  }
-};
+  const clearCart = async () => {
+    try {
+      const res = await axios.delete(`${API_URL}/api/market/clear`, {
+        withCredentials: true,
+      });
+      setCart(res.data.cart);
+      toast.success("Cart cleared");
+    } catch (error) {
+      toast.error("Failed to clear cart");
+    }
+  };
 
-// ===============================
-// CHECKOUT → CREATE ORDERS (POD)
-// ===============================
-const handleCheckout = async () => {
-  if (!cart?.items?.length) {
-    toast.error("Your cart is empty");
-    return;
-  }
+  // ===============================
+  // CHECKOUT
+  // ===============================
+  const handleCheckout = async () => {
+    if (!cart?.items?.length) {
+      toast.error("Your cart is empty");
+      return;
+    }
 
-  try {
-    setLoadingCheckout(true);
+    // Online payment later (Flutterwave)
+    if (paymentMethod === "online") {
+      toast.info("Online payment coming soon. Please use Payment on delivery.");
+      return;
+    }
 
-    const res = await axios.post(
-      `${API_URL}/api/market/orders/checkout`,
-      {
-        meetupNote: "", // optional: collect from input later
-      },
-      { withCredentials: true }
-    );
+    try {
+      setLoadingCheckout(true);
 
-    toast.success(res.data.message || "Order placed successfully");
-    navigate("/market/orders"); // go to orders page
-  } catch (error) {
-    console.error(error);
-    toast.error(
-      error.response?.data?.message || "Checkout failed"
-    );
-  } finally {
-    setLoadingCheckout(false);
-  }
-};
+      const res = await axios.post(
+        `${API_URL}/api/market/orders/checkout`,
+        {
+          paymentMethod: "pod",
+          meetupNote: meetupNote.trim(),
+        },
+        { withCredentials: true }
+      );
 
-
+      toast.success(res.data.message || "Order placed successfully");
+      navigate("/market/orders");
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Checkout failed");
+    } finally {
+      setLoadingCheckout(false);
+    }
+  };
 
   const items = cart?.items || [];
 
@@ -181,6 +187,7 @@ const handleCheckout = async () => {
           </div>
         ) : (
           <div className="grid lg:grid-cols-3 gap-6">
+            {/* Items */}
             <div className="lg:col-span-2 space-y-4">
               {items.map((item) => {
                 const product = item.product;
@@ -192,9 +199,7 @@ const handleCheckout = async () => {
                     className="bg-white rounded-3xl border border-gray-100 p-4 sm:p-5 shadow-sm flex gap-4"
                   >
                     <div
-                      onClick={() =>
-                        navigate(`/market/item/${product._id}`)
-                      }
+                      onClick={() => navigate(`/market/item/${product._id}`)}
                       className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-gray-50 shrink-0 cursor-pointer"
                     >
                       {product.files?.[0]?.url ? (
@@ -205,10 +210,7 @@ const handleCheckout = async () => {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <ShoppingBag
-                            className="text-gray-300"
-                            size={28}
-                          />
+                          <ShoppingBag className="text-gray-300" size={28} />
                         </div>
                       )}
                     </div>
@@ -300,12 +302,66 @@ const handleCheckout = async () => {
                   </div>
                 </div>
 
+                {/* Payment method */}
+                <div className="mt-5 space-y-2">
+                  <p className="text-sm font-semibold text-gray-800">
+                    Payment method
+                  </p>
+
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="pod"
+                      checked={paymentMethod === "pod"}
+                      onChange={() => setPaymentMethod("pod")}
+                      className="accent-indigo-600"
+                    />
+                    Payment on delivery
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="online"
+                      checked={paymentMethod === "online"}
+                      onChange={() => setPaymentMethod("online")}
+                      className="accent-indigo-600"
+                    />
+                    Pay online
+                    <span className="text-[10px] text-gray-400 ml-1">
+                      (soon)
+                    </span>
+                  </label>
+                </div>
+
+                {/* Meetup note for POD */}
+                {paymentMethod === "pod" && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                      Meetup note (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={meetupNote}
+                      onChange={(e) => setMeetupNote(e.target.value)}
+                      placeholder="e.g. School gate, Hostel A"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                    />
+                  </div>
+                )}
+
                 <button
                   onClick={handleCheckout}
                   disabled={loadingCheckout}
                   className="mt-6 w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold disabled:opacity-60"
                 >
-                  {loadingCheckout ? "Processing..." : "Checkout"}
+                  {loadingCheckout
+                    ? "Processing..."
+                    : paymentMethod === "pod"
+                    ? "Place Order"
+                    : "Pay Online"}
                 </button>
 
                 <button
@@ -314,6 +370,12 @@ const handleCheckout = async () => {
                 >
                   Continue Shopping
                 </button>
+
+                <p className="text-[11px] text-gray-400 text-center mt-4 leading-relaxed">
+                  {paymentMethod === "pod"
+                    ? "After ordering, you can chat with the seller and pay on delivery."
+                    : "Online payment will be available soon."}
+                </p>
               </div>
             </div>
           </div>
