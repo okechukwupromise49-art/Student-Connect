@@ -14,6 +14,7 @@ import MarketRegister from './component/MarketRegister'
 import { SellItem } from './component/SellItem'
 import CartPage from './page/Cart'
 import OrdersPage from './page/Order'
+import MarketYou from './page/MarketYou'
 
 
 
@@ -35,6 +36,7 @@ function App() {
            <Route path="/market/sell" element={<SellItem/>}/>
            <Route path="/market/cart" element={<CartPage/>}/>
            <Route path="/market/orders" element={<OrdersPage/>}/>
+           <Route path="/market/you" element={<MarketYou/>}/>
         </Routes>
      
     </div>
