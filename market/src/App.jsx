@@ -13,6 +13,7 @@ import MarketHome from './component/MarketHome'
 import MarketRegister from './component/MarketRegister'
 import { SellItem } from './component/SellItem'
 import CartPage from './page/Cart'
+import OrdersPage from './page/Order'
 
 
 
@@ -33,6 +34,7 @@ function App() {
            <Route path="/market/reg" element={<MarketRegister/>}/>
            <Route path="/market/sell" element={<SellItem/>}/>
            <Route path="/market/cart" element={<CartPage/>}/>
+           <Route path="/market/orders" element={<OrdersPage/>}/>
         </Routes>
      
     </div>

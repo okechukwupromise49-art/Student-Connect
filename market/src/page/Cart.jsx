@@ -42,7 +42,7 @@ export default function CartPage() {
   const updateQty = async (productId, quantity) => {
     try {
       const res = await axios.patch(
-        `${API_URL}/api/market/cart/update/${productId}`,
+        `${API_URL}/api/market/update/${productId}`,
         { quantity },
         { withCredentials: true }
       );
@@ -55,7 +55,7 @@ export default function CartPage() {
   const removeItem = async (productId) => {
     try {
       const res = await axios.delete(
-        `${API_URL}/api/market/cart/remove/${productId}`,
+        `${API_URL}/api/market/remove/${productId}`,
         { withCredentials: true }
       );
       setCart(res.data.cart);
@@ -67,7 +67,7 @@ export default function CartPage() {
 
   const clearCart = async () => {
     try {
-      const res = await axios.delete(`${API_URL}/api/market/cart/clear`, {
+      const res = await axios.delete(`${API_URL}/api/market/clear`, {
         withCredentials: true,
       });
       setCart(res.data.cart);
@@ -94,7 +94,7 @@ export default function CartPage() {
         );
       }
 
-      await axios.delete(`${API_URL}/api/market/cart/clear`, {
+      await axios.delete(`${API_URL}/api/market/clear`, {
         withCredentials: true,
       });
 
