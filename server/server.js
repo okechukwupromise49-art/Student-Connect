@@ -10,6 +10,8 @@ const registerRoutes = require("./routes/register");
 const postRoutes = require("./routes/post");
 const marketUserRoutes = require("./routes/marketUser");
 const sellItemRoutes = require("./routes/sellItem");
+const cartRoutes = require("./routes/cart");
+
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
@@ -45,6 +47,7 @@ app.use("/api/register", registerRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/market", marketUserRoutes);
 app.use("/api/market", sellItemRoutes);
+app.use("/api/market", cartRoutes);
 
 app.get("/", (req, res) => {
   res.send("StudyConnect API is running...");
