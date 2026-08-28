@@ -33,8 +33,9 @@ export default function MarketHome() {
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("newest");
 
-  // Cart (saved in localStorage)
-  const [cart, setCart] = useState([]);
+  // Backend cart
+  const [cart, setCart] = useState(null);
+  const [addingId, setAddingId] = useState(null);
 
   const categories = [
     { id: "all", label: "All", icon: ShoppingBag },
@@ -45,14 +46,15 @@ export default function MarketHome() {
     { id: "other", label: "Other", icon: Package },
   ];
 
-  
-
-  // Fetch market user + items
+  // =========================
+  // FETCH MARKET + CART
+  // =========================
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
         setLoading(true);
 
+        // Seller profile
         try {
           const userRes = await axios.get(
             `${API_URL}/api/market/marketUser`,
@@ -67,6 +69,7 @@ export default function MarketHome() {
           }
         }
 
+        // Items
         try {
           const itemsRes = await axios.get(`${API_URL}/api/market/items`, {
             withCredentials: true,
@@ -75,6 +78,17 @@ export default function MarketHome() {
         } catch (err) {
           console.error("Items error:", err);
           setItems([]);
+        }
+
+        // Cart from backend
+        try {
+          const cartRes = await axios.get(`${API_URL}/api/market/cart`, {
+            withCredentials: true,
+          });
+          setCart(cartRes.data || null);
+        } catch (err) {
+          console.error("Cart error:", err);
+          setCart(null);
         }
       } finally {
         setLoading(false);
@@ -85,45 +99,51 @@ export default function MarketHome() {
   }, []);
 
   // =========================
-  // ADD TO CART
+  // ADD TO CART (BACKEND)
   // =========================
-  const handleAddToCart = (e, item) => {
-    e.stopPropagation(); // don't open item details
+  const handleAddToCart = async (e, item) => {
+    e.stopPropagation();
 
-    const stock = item.quantity ?? 1;
-    const existing = cart.find((c) => c._id === item._id);
+    try {
+      setAddingId(item._id);
 
-    if (existing) {
-      if (existing.cartQty >= stock) {
-        toast.info("No more stock available");
-        return;
-      }
-
-      setCart((prev) =>
-        prev.map((c) =>
-          c._id === item._id ? { ...c, cartQty: c.cartQty + 1 } : c
-        )
-      );
-      toast.success("Cart updated");
-    } else {
-      setCart((prev) => [
-        ...prev,
+      const res = await axios.post(
+        `${API_URL}/api/market/cart/add`,
         {
-          _id: item._id,
-          title: item.title,
-          price: item.price,
-          image: item.thumbnail || item.files?.[0]?.url || null,
-          stock,
-          cartQty: 1,
-          category: item.category,
-          author: item.author || item.seller,
+          productId: item._id,
+          quantity: 1,
         },
-      ]);
-      toast.success("Added to cart");
+        { withCredentials: true }
+      );
+
+      setCart(res.data.cart);
+      toast.success(res.data.message || "Added to cart");
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error.response?.data?.message || "Failed to add to cart"
+      );
+    } finally {
+      setAddingId(null);
     }
   };
 
-  const cartCount = cart.reduce((sum, c) => sum + (c.cartQty || 1), 0);
+  // Cart helpers
+  const cartItems = cart?.items || [];
+
+  const cartCount = cartItems.reduce(
+    (sum, item) => sum + (item.quantity || 0),
+    0
+  );
+
+  const getCartQty = (productId) => {
+    const found = cartItems.find(
+      (c) =>
+        c.product?._id?.toString() === productId?.toString() ||
+        c.product?.toString() === productId?.toString()
+    );
+    return found?.quantity || 0;
+  };
 
   // Filter + sort
   const filteredItems = items
@@ -193,7 +213,7 @@ export default function MarketHome() {
               )}
             </div>
 
-            <div className="shrink-0 flex flex-col sm:flex-row gap-3">
+            <div className="shrink-0">
               {marketUser ? (
                 <button
                   onClick={() => navigate("/market/sell")}
@@ -326,7 +346,8 @@ export default function MarketHome() {
             {filteredItems.map((item) => {
               const qty = item.quantity ?? 1;
               const lowStock = qty > 0 && qty <= 3;
-              const inCart = cart.find((c) => c._id === item._id);
+              const inCartQty = getCartQty(item._id);
+              const isAdding = addingId === item._id;
 
               return (
                 <article
@@ -418,18 +439,21 @@ export default function MarketHome() {
                       </div>
                     </div>
 
-                    {/* ADD TO CART BUTTON */}
+                    {/* ADD TO CART */}
                     <button
                       onClick={(e) => handleAddToCart(e, item)}
-                      className={`mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                        inCart
+                      disabled={isAdding}
+                      className={`mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 ${
+                        inCartQty > 0
                           ? "bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100"
                           : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200"
                       }`}
                     >
                       <ShoppingCart size={16} />
-                      {inCart
-                        ? `In cart (${inCart.cartQty})`
+                      {isAdding
+                        ? "Adding..."
+                        : inCartQty > 0
+                        ? `In cart (${inCartQty})`
                         : "Add to Cart"}
                     </button>
                   </div>
