@@ -1,7 +1,7 @@
 // routes/cart.js
 const express = require("express");
 const router = express.Router();
-const Cart = require("../models/Cart");
+const Cart = require("../models/cart");
 const SellItem = require("../models/sellItem");
 const auth = require("../middleware/auth");
 
