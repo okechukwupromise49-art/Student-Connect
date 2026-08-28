@@ -8,7 +8,7 @@ const auth = require("../middleware/auth");
 // ===============================
 // GET MY CART
 // ===============================
-router.get("/", auth, async (req, res) => {
+router.get("/cart", auth, async (req, res) => {
   try {
     let cart = await Cart.findOne({ user: req.user.id }).populate({
       path: "items.product",
