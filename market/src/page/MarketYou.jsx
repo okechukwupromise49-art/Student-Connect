@@ -48,7 +48,7 @@ export default function MarketYou() {
 
         // My listings
         const itemsRes = await axios.get(
-          `${API_URL}/api/market/my-items`,
+          `${API_URL}/api/market/items`,
           { withCredentials: true }
         );
         const list = itemsRes.data || [];
