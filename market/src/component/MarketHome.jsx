@@ -108,7 +108,7 @@ export default function MarketHome() {
       setAddingId(item._id);
 
       const res = await axios.post(
-        `${API_URL}/api/market/cart/add`,
+        `${API_URL}/api/market/add`,
         {
           productId: item._id,
           quantity: 1,
