@@ -17,9 +17,9 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import API_URL from "../Api";
 import studySpher from "../assets/studySpher.jpeg";
-import { MarketHeader } from "./MarketHeader";
-import { MarketFooter } from "./MarketFooter";
-import { PageLoader } from "./Loader";
+import { MarketHeader } from "../component/MarketHeader";
+import { MarketFooter } from "../component/MarketFooter";
+import { PageLoader } from "../component/Loader";
 
 export default function MarketYou() {
   const navigate = useNavigate();
