@@ -12,6 +12,7 @@ import DisplayNot from './component/DisplayNot'
 import MarketHome from './component/MarketHome'
 import MarketRegister from './component/MarketRegister'
 import { SellItem } from './component/SellItem'
+import CartPage from './page/Cart'
 
 
 
@@ -31,6 +32,7 @@ function App() {
            <Route path="/market" element={<MarketHome/>}/>
            <Route path="/market/reg" element={<MarketRegister/>}/>
            <Route path="/market/sell" element={<SellItem/>}/>
+           <Route path="/market/cart" element={<CartPage/>}/>
         </Routes>
      
     </div>

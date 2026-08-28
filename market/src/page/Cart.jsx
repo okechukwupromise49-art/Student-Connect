@@ -11,8 +11,8 @@ import {
 import { toast } from "react-toastify";
 import axios from "axios";
 import API_URL from "../Api";
-import { MarketHeader } from "./MarketHeader";
-import { MarketFooter } from "./MarketFooter";
+import { MarketHeader } from "../component/MarketHeader";
+import { MarketFooter } from "../component/MarketFooter";
 
 export default function CartPage() {
   const navigate = useNavigate();

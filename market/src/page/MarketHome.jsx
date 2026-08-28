@@ -18,10 +18,10 @@ import {
 import axios from "axios";
 import { toast } from "react-toastify";
 import API_URL from "../Api";
-import { MarketHeader } from "./MarketHeader";
+import { MarketHeader } from "../component/MarketHeader";
 import studySpher from "../assets/studySpher.jpeg";
-import { PageLoader } from "./Loader";
-import { MarketFooter } from "./MarketFooter";
+import { PageLoader } from "../component/Loader";
+import { MarketFooter } from "../component/MarketFooter";
 
 export default function MarketHome() {
   const navigate = useNavigate();
