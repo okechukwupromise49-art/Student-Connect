@@ -40,74 +40,76 @@ export default function CartPage() {
   }, []);
 
   const updateQty = async (productId, quantity) => {
-    try {
-      const res = await axios.patch(
-        `${API_URL}/api/market/update/${productId}`,
-        { quantity },
-        { withCredentials: true }
-      );
-      setCart(res.data.cart);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update");
-    }
-  };
+  try {
+    const res = await axios.patch(
+      `${API_URL}/api/market/update/${productId}`,
+      { quantity },
+      { withCredentials: true }
+    );
+    setCart(res.data.cart);
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Failed to update");
+  }
+};
 
-  const removeItem = async (productId) => {
-    try {
-      const res = await axios.delete(
-        `${API_URL}/api/market/remove/${productId}`,
-        { withCredentials: true }
-      );
-      setCart(res.data.cart);
-      toast.success("Removed from cart");
-    } catch (error) {
-      toast.error("Failed to remove item");
-    }
-  };
+const removeItem = async (productId) => {
+  try {
+    const res = await axios.delete(
+      `${API_URL}/api/market/remove/${productId}`,
+      { withCredentials: true }
+    );
+    setCart(res.data.cart);
+    toast.success("Removed from cart");
+  } catch (error) {
+    toast.error("Failed to remove item");
+  }
+};
 
-  const clearCart = async () => {
-    try {
-      const res = await axios.delete(`${API_URL}/api/market/clear`, {
-        withCredentials: true,
-      });
-      setCart(res.data.cart);
-      toast.success("Cart cleared");
-    } catch (error) {
-      toast.error("Failed to clear cart");
-    }
-  };
+const clearCart = async () => {
+  try {
+    const res = await axios.delete(`${API_URL}/api/market/clear`, {
+      withCredentials: true,
+    });
+    setCart(res.data.cart);
+    toast.success("Cart cleared");
+  } catch (error) {
+    toast.error("Failed to clear cart");
+  }
+};
 
-  const handleCheckout = async () => {
-    if (!cart?.items?.length) {
-      toast.error("Your cart is empty");
-      return;
-    }
+// ===============================
+// CHECKOUT → CREATE ORDERS (POD)
+// ===============================
+const handleCheckout = async () => {
+  if (!cart?.items?.length) {
+    toast.error("Your cart is empty");
+    return;
+  }
 
-    try {
-      setLoadingCheckout(true);
+  try {
+    setLoadingCheckout(true);
 
-      for (const item of cart.items) {
-        await axios.post(
-          `${API_URL}/api/market/buy/${item.product._id}`,
-          { quantity: item.quantity },
-          { withCredentials: true }
-        );
-      }
+    const res = await axios.post(
+      `${API_URL}/api/market/orders/checkout`,
+      {
+        meetupNote: "", // optional: collect from input later
+      },
+      { withCredentials: true }
+    );
 
-      await axios.delete(`${API_URL}/api/market/clear`, {
-        withCredentials: true,
-      });
+    toast.success(res.data.message || "Order placed successfully");
+    navigate("/market/orders"); // go to orders page
+  } catch (error) {
+    console.error(error);
+    toast.error(
+      error.response?.data?.message || "Checkout failed"
+    );
+  } finally {
+    setLoadingCheckout(false);
+  }
+};
 
-      toast.success("Purchase successful 🎉");
-      navigate("/market");
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Checkout failed"
-      );
-    } finally {
-      setLoadingCheckout(false);
-    }
-  };
+
 
   const items = cart?.items || [];
 
