@@ -71,7 +71,7 @@ export default function MarketHome() {
 
         // Items
         try {
-          const itemsRes = await axios.get(`${API_URL}/api/market/24`, {
+          const itemsRes = await axios.get(`${API_URL}/api/market/items`, {
             withCredentials: true,
           });
           setItems(itemsRes.data || []);
