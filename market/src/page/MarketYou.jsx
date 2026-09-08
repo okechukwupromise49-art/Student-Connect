@@ -238,8 +238,14 @@ export default function MarketYou() {
                 className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm"
               >
                 <div className="h-36 bg-gray-50">
-                  <X/>
-                  {item.files?.[0]?.url ? (
+                 <button
+                    onClick={() => handleDelete(item._id)}
+                    className="absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 text-red-500 shadow-md hover:bg-red-500 hover:text-white transition-all duration-200"
+                    title="Delete product"
+                  >
+                    <X size={18} strokeWidth={2.5} />
+                  </button>
+                                  {item.files?.[0]?.url ? (
                     <img
                       src={item.files[0].url}
                       alt={item.title}
