@@ -4,8 +4,6 @@ import {
   Store,
   Edit3,
   Package,
-  ShoppingBag,
-  TrendingUp,
   MapPin,
   GraduationCap,
   Phone,
@@ -34,6 +32,15 @@ export default function MarketYou() {
   });
   const [loading, setLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const computeStats = (list) => {
+    setStats({
+      listings: list.length,
+      active: list.filter((i) => (i.quantity ?? 0) > 0).length,
+      sold: list.filter((i) => (i.quantity ?? 0) === 0).length,
+    });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,19 +54,32 @@ export default function MarketYou() {
         );
         setSeller(sellerRes.data);
 
-        // My listings
-        const itemsRes = await axios.get(
-          `${API_URL}/api/market/items`,
-          { withCredentials: true }
-        );
-        const list = itemsRes.data || [];
-        setMyItems(list);
+        // Prefer my-items endpoint; fallback to filter all items by author
+        let list = [];
+        try {
+          const myRes = await axios.get(`${API_URL}/api/market/my-items`, {
+            withCredentials: true,
+          });
+          list = myRes.data || [];
+        } catch {
+          const itemsRes = await axios.get(`${API_URL}/api/market/items`, {
+            withCredentials: true,
+          });
+          const all = itemsRes.data || [];
+          const sellerUserId =
+            sellerRes.data?.user?._id ||
+            sellerRes.data?.user ||
+            sellerRes.data?._id;
 
-        setStats({
-          listings: list.length,
-          active: list.filter((i) => (i.quantity ?? 0) > 0).length,
-          sold: list.filter((i) => (i.quantity ?? 0) === 0).length,
-        });
+          list = all.filter(
+            (item) =>
+              item.author?._id?.toString() === sellerUserId?.toString() ||
+              item.author?.toString() === sellerUserId?.toString()
+          );
+        }
+
+        setMyItems(list);
+        computeStats(list);
 
         // Cart count
         try {
@@ -75,7 +95,6 @@ export default function MarketYou() {
           setCartCount(0);
         }
       } catch (err) {
-        // Not registered as seller
         if (err.response?.status === 404) {
           setSeller(null);
         } else {
@@ -89,6 +108,36 @@ export default function MarketYou() {
 
     fetchData();
   }, []);
+
+  // =========================
+  // DELETE ITEM
+  // =========================
+  const handleDelete = async (itemId) => {
+    const confirmed = window.confirm(
+      "Delete this listing? This cannot be undone."
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(itemId);
+
+      await axios.delete(`${API_URL}/api/market/item/${itemId}`, {
+        withCredentials: true,
+      });
+
+      const updated = myItems.filter((i) => i._id !== itemId);
+      setMyItems(updated);
+      computeStats(updated);
+      toast.success("Listing deleted");
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error.response?.data?.message || "Failed to delete listing"
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (loading) return <PageLoader />;
 
@@ -147,7 +196,8 @@ export default function MarketYou() {
                   {seller.full_name}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  {seller.department} · {seller.university || seller.institution}
+                  {seller.department} ·{" "}
+                  {seller.university || seller.institution}
                 </p>
               </div>
 
@@ -231,21 +281,28 @@ export default function MarketYou() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4">
             {myItems.map((item) => (
               <div
                 key={item._id}
                 className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm"
               >
-                <div className="h-36 bg-gray-50">
-                 <button
-                    onClick={() => handleDelete(item._id)}
-                    className="absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 text-red-500 shadow-md hover:bg-red-500 hover:text-white transition-all duration-200"
+                {/* Image + Delete X */}
+                <div className="relative h-32 sm:h-36 bg-gray-50">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item._id);
+                    }}
+                    disabled={deletingId === item._id}
+                    className="absolute top-2 right-2 z-10 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-white/95 text-red-500 shadow-md hover:bg-red-500 hover:text-white transition-all duration-200 disabled:opacity-50"
                     title="Delete product"
                   >
-                    <X size={18} strokeWidth={2.5} />
+                    <X size={16} strokeWidth={2.5} />
                   </button>
-                                  {item.files?.[0]?.url ? (
+
+                  {item.files?.[0]?.url ? (
                     <img
                       src={item.files[0].url}
                       alt={item.title}
@@ -257,9 +314,10 @@ export default function MarketYou() {
                     </div>
                   )}
                 </div>
-                <div className="p-4">
+
+                <div className="p-3 sm:p-4">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-gray-900 line-clamp-1">
+                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base line-clamp-1">
                       {item.title}
                     </h3>
                     <span className="text-sm font-bold text-indigo-600 shrink-0">
@@ -270,7 +328,7 @@ export default function MarketYou() {
                     {item.category} · Stock: {item.quantity ?? 0}
                   </p>
                   <button
-                    onClick={() => navigate(`/market/item/${item._id}`)}
+                    onClick={() => navigate(`/item/${item._id}`)}
                     className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
                     <Eye size={16} />

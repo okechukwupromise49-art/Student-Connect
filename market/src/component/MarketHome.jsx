@@ -207,7 +207,7 @@ export default function MarketHome() {
                   </h1>
                   <p className="text-indigo-100 mt-4 text-sm sm:text-base leading-relaxed max-w-xl">
                     Your campus market for study materials, gadgets, fashion,
-                    beauty products, and more — from students to students.
+                    beauty products, and more  from students to students.
                   </p>
                 </>
               )}
