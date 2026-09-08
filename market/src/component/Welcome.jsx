@@ -74,7 +74,7 @@ export function Welcome() {
             className="flex-1 flex items-center justify-center gap-2 border border-white/30 text-white font-semibold px-3 py-3 rounded-2xl hover:bg-white/10 active:scale-[0.97] transition-all"
           >
             <Users size={20} />
-            <span>Find Friends</span>
+            <span>Connect</span>
           </button>
         </div>
         </div>
