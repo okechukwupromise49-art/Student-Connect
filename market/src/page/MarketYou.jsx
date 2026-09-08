@@ -12,6 +12,7 @@ import {
   Mail,
   Plus,
   Eye,
+  X,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -237,6 +238,7 @@ export default function MarketYou() {
                 className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm"
               >
                 <div className="h-36 bg-gray-50">
+                  <X/>
                   {item.files?.[0]?.url ? (
                     <img
                       src={item.files[0].url}
