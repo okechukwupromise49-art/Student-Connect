@@ -60,19 +60,23 @@ export function Welcome() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-4 pt-2">
-            <button className="flex items-center gap-3 bg-white text-slate-900 font-semibold px-7 py-4 sm:px-5 sm:py-2 rounded-2xl hover:bg-white/95 active:scale-[0.97] transition-all duration-200 shadow-xl shadow-indigo-500/30"
-              onClick={() => navigate("/create")}>
-              <Plus size={24} />
-              Create Post
-            </button>
+          <div className="flex flex-row gap-3 pt-2 w-full">
+          <button
+            onClick={() => navigate("/create")}
+            className="flex-1 flex items-center justify-center gap-2 bg-white text-slate-900 font-semibold px-3 py-3 rounded-2xl hover:bg-slate-100 active:scale-[0.97] transition-all"
+          >
+            <Plus size={20} />
+            <span>Create Post</span>
+          </button>
 
-            <button className="flex items-center gap-3 border border-white/30 hover:border-white/50 text-white font-semibold px-7 py-4 sm:px-5 sm:py-2  rounded-2xl hover:bg-white/10 active:scale-[0.97] transition-all duration-200 backdrop-blur-sm"
-              onClick={() => navigate("/find")}>
-              <Users size={24} />
-              Find Friends
-            </button>
-          </div>
+          <button
+            onClick={() => navigate("/find")}
+            className="flex-1 flex items-center justify-center gap-2 border border-white/30 text-white font-semibold px-3 py-3 rounded-2xl hover:bg-white/10 active:scale-[0.97] transition-all"
+          >
+            <Users size={20} />
+            <span>Find Friends</span>
+          </button>
+        </div>
         </div>
 
         {/* Image - Hidden on mobile */}
