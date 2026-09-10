@@ -139,7 +139,7 @@ export default function Messages() {
               chat.
             </p>
             <button
-              onClick={() => navigate("/connect")}
+              onClick={() => navigate("/find")}
               className="mt-6 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700"
             >
               Find friends
