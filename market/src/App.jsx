@@ -16,6 +16,7 @@ import CartPage from './page/Cart'
 import OrdersPage from './page/Order'
 import MarketYou from './page/MarketYou'
 import MarketItem from './component/Item'
+import Messages from './page/Message'
 
 
 
@@ -39,6 +40,7 @@ function App() {
            <Route path="/market/orders" element={<OrdersPage/>}/>
            <Route path="/market/you" element={<MarketYou/>}/>
            <Route path="/market/item/:id" element={<MarketItem />} />
+           <Route path="/message" element={<Messages />} />
         </Routes>
      
     </div>
