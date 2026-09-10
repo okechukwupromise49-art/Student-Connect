@@ -17,6 +17,7 @@ import OrdersPage from './page/Order'
 import MarketYou from './page/MarketYou'
 import MarketItem from './component/Item'
 import Messages from './page/Message'
+import ChatPage from './component/Chat'
 
 
 
