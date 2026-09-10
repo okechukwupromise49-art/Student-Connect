@@ -10,7 +10,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import API_URL from "../Api";
 import studySpher from "../assets/studySpher.jpeg";
-import { PageLoader } from "./Loader";
+import { PageLoader } from "../component/Loader";
 
 export default function Messages() {
   const navigate = useNavigate();

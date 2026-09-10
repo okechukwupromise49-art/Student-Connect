@@ -27,7 +27,7 @@ export function Footer() {
     },
     { 
       icon: MessageCircle, 
-      label: "Meassage", 
+      label: "Message", 
       path: `/message` 
     },
     { 
