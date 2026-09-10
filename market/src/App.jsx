@@ -41,6 +41,7 @@ function App() {
            <Route path="/market/you" element={<MarketYou/>}/>
            <Route path="/market/item/:id" element={<MarketItem />} />
            <Route path="/message" element={<Messages />} />
+           <Route path="/chat/:userId" element={<ChatPage />} />
         </Routes>
      
     </div>
