@@ -351,4 +351,56 @@ router.post("/follow/:userId", auth, async (req, res) => {
   }
 });
 
+// GET /api/register/followers
+router.get("/followers", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .populate(
+        "followers",
+        "full_name profileImage department institution"
+      )
+      .select("followers");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user.followers || []);
+  } catch (error) {
+    console.error("Followers error:", error);
+    res.status(500).json({
+      message: "Failed to load followers",
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/register/following
+router.get("/following", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .populate(
+        "following",
+        "full_name profileImage department institution"
+      )
+      .select("following");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user.following || []);
+  } catch (error) {
+    console.error("Following error:", error);
+    res.status(500).json({
+      message: "Failed to load following",
+      error: error.message,
+    });
+  }
+});
+
+
+
+
+
  module.exports = router
