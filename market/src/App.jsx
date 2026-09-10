@@ -41,7 +41,7 @@ function App() {
            <Route path="/market/orders" element={<OrdersPage/>}/>
            <Route path="/market/you" element={<MarketYou/>}/>
            <Route path="/market/item/:id" element={<MarketItem />} />
-           <Route path="/message" element={<Messages />} />
+           <Route path="/messages" element={<Messages />} />
            <Route path="/chat/:userId" element={<ChatPage />} />
         </Routes>
      
