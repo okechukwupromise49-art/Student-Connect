@@ -45,9 +45,9 @@ export default function Messages() {
             `${API_URL}/api/register/profile/${meRes.data._id}`,
             { withCredentials: true }
           );
-
+          console.log(profileRes)
           const list = profileRes.data?.followers || [];
-
+          console.log(list)
           // If followers are only IDs, you may need a populate endpoint
           setFollowers(Array.isArray(list) ? list : []);
         }
