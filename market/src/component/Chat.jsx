@@ -26,7 +26,7 @@ export default function ChatPage() {
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-
+/*
   const fetchChat = async () => {
     try {
       const [chatRes, meRes] = await Promise.all([
@@ -49,7 +49,7 @@ export default function ChatPage() {
       setLoading(false);
     }
   };
-
+*/
   useEffect(() => {
     if (userId) {
       setLoading(true);
@@ -62,6 +62,7 @@ export default function ChatPage() {
   }, [messages]);
 
   // Optional: poll every 5s for new messages
+  /*
   useEffect(() => {
     if (!userId) return;
 
@@ -78,8 +79,9 @@ export default function ChatPage() {
 
     return () => clearInterval(interval);
   }, [userId]);
+  */
 
-  const handleSend = async (e) => {
+/*const handleSend = async (e) => {
     e?.preventDefault();
 
     const value = text.trim();
@@ -105,7 +107,7 @@ export default function ChatPage() {
       setSending(false);
     }
   };
-
+*/
   const formatTime = (date) => {
     if (!date) return "";
     return new Date(date).toLocaleTimeString([], {
