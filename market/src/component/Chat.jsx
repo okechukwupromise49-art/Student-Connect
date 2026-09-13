@@ -7,6 +7,8 @@ import { toast } from "react-toastify";
 import API_URL from "../Api";
 import studySpher from "../assets/studySpher.jpeg";
 import { PageLoader } from "../component/Loader";
+import socket from "../socket";
+
 
 export default function ChatPage() {
   const { userId } = useParams();
@@ -61,23 +63,57 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Optional: poll every 5s for new messages
-  useEffect(() => {
-    if (!userId) return;
+ 
+// REAL-TIME CHAT
+// ===============================
+useEffect(() => {
+  if (!userId || !me?._id) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/chat/${userId}`, {
-          withCredentials: true,
-        });
-        setMessages(res.data.messages || []);
-      } catch {
-        // silent
-      }
-    }, 5000);
+  socket.connect();
 
-    return () => clearInterval(interval);
-  }, [userId]);
+  // Join my personal room
+  socket.emit("join", me._id);
+
+  const handleNewMessage = (message) => {
+    const senderId =
+      message.sender?._id?.toString() ||
+      message.sender?.toString();
+
+    const receiverId =
+      message.receiver?._id?.toString() ||
+      message.receiver?.toString();
+
+    const currentUserId = me._id.toString();
+    const chatUserId = userId.toString();
+
+    // Only add messages belonging to this conversation
+    const belongsToThisChat =
+      (senderId === currentUserId && receiverId === chatUserId) ||
+      (senderId === chatUserId && receiverId === currentUserId);
+
+    if (!belongsToThisChat) return;
+
+    setMessages((prev) => {
+      // Prevent duplicate message
+      const alreadyExists = prev.some(
+        (msg) => msg._id === message._id
+      );
+
+      if (alreadyExists) return prev;
+
+      return [...prev, message];
+    });
+  };
+
+  socket.on("newMessage", handleNewMessage);
+
+  return () => {
+    socket.off("newMessage", handleNewMessage);
+    socket.disconnect();
+  };
+}, [userId, me?._id]);
+
+    
 
   const handleSend = async (e) => {
     e?.preventDefault();

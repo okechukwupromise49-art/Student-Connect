@@ -1,6 +1,8 @@
 require("dotenv").config();
 
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const cors = require("cors");
 const dns = require("node:dns");
 const mongoose = require("mongoose");
@@ -17,6 +19,8 @@ const chatRoutes = require("./routes/chat");
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const app = express();
+
+const server = http.createServer(app);
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -56,8 +60,35 @@ app.get("/", (req, res) => {
   res.send("StudyConnect API is running...");
 });
 
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      "https://student-connect-eta.vercel.app",
+    ],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("join", (userId) => {
+    socket.join(userId.toString());
+
+    console.log(`User ${userId} joined room`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 7000;
 
-app.listen(PORT, "0.0.0.0", () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });

@@ -41,6 +41,8 @@ router.get("/:userId", auth, async (req, res) => {
       { $set: { read: true } }
     );
 
+  
+  
     res.status(200).json({
       user: otherUser,
       messages,
@@ -63,19 +65,32 @@ router.post("/:userId", auth, async (req, res) => {
     const myId = req.user.id;
     const { text, orderId } = req.body;
 
+    // Check message
     if (!text || !text.trim()) {
-      return res.status(400).json({ message: "Message cannot be empty" });
+      return res.status(400).json({
+        message: "Message cannot be empty",
+      });
     }
 
+    // Prevent messaging yourself
     if (otherId === myId.toString()) {
-      return res.status(400).json({ message: "Cannot message yourself" });
+      return res.status(400).json({
+        message: "Cannot message yourself",
+      });
     }
 
+    // Check receiver exists
     const otherUser = await User.findById(otherId);
+
     if (!otherUser) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
+    // ===============================
+    // CREATE MESSAGE
+    // ===============================
     const message = await Message.create({
       sender: myId,
       receiver: otherId,
@@ -83,16 +98,43 @@ router.post("/:userId", auth, async (req, res) => {
       order: orderId || null,
     });
 
-    await message.populate("sender", "full_name profileImage");
-    await message.populate("receiver", "full_name profileImage");
+    // ===============================
+    // POPULATE MESSAGE
+    // ===============================
+    await message.populate(
+      "sender",
+      "full_name profileImage"
+    );
 
-    res.status(201).json({
+    await message.populate(
+      "receiver",
+      "full_name profileImage"
+    );
+
+    // ===============================
+    // SOCKET.IO
+    // ===============================
+    const io = req.app.get("io");
+
+    if (io) {
+      io.to(otherId.toString()).emit(
+        "newMessage",
+        message
+      );
+    }
+
+    // ===============================
+    // RESPONSE
+    // ===============================
+    return res.status(201).json({
       message: "Sent",
       data: message,
     });
+
   } catch (error) {
     console.error("Send message error:", error);
-    res.status(500).json({
+
+    return res.status(500).json({
       message: "Failed to send message",
       error: error.message,
     });
