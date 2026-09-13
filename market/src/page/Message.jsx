@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import API_URL from "../Api";
 import studySpher from "../assets/studySpher.jpeg";
 import { PageLoader } from "../component/Loader";
+import socket from "../socket";
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function Messages() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
+  const [isOnline, setIsOnline] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,6 +78,50 @@ export default function Messages() {
     navigate(`/chat/${user._id}`);
   };
 
+ // ===============================
+// ACTIVE / ONLINE SYSTEM
+// ===============================
+useEffect(() => {
+  if (!currentUser?._id) return;
+
+  socket.connect();
+
+  // Join my personal room
+  socket.emit("join", currentUser._id);
+
+  const handleUserOnline = (onlineUserId) => {
+    const id = onlineUserId.toString();
+
+    setFollowers((prev) =>
+      prev.map((user) =>
+        user._id?.toString() === id
+          ? { ...user, isOnline: true }
+          : user
+      )
+    );
+  };
+
+  const handleUserOffline = (offlineUserId) => {
+    const id = offlineUserId.toString();
+
+    setFollowers((prev) =>
+      prev.map((user) =>
+        user._id?.toString() === id
+          ? { ...user, isOnline: false }
+          : user
+      )
+    );
+  };
+
+  socket.on("userOnline", handleUserOnline);
+  socket.on("userOffline", handleUserOffline);
+
+  return () => {
+    socket.off("userOnline", handleUserOnline);
+    socket.off("userOffline", handleUserOffline);
+    socket.disconnect();
+  };
+}, [currentUser?._id]);
   if (loading) return <PageLoader />;
 
   return (
@@ -163,13 +209,25 @@ export default function Messages() {
                   <p className="font-semibold text-gray-900 truncate">
                     {user.full_name || "Student"}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {user.department
-                      ? `${user.department}${
-                          user.institution ? ` · ${user.institution}` : ""
-                        }`
-                      : "Tap to chat"}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+  {user.isOnline && (
+    <span className="w-2 h-2 bg-green-500 rounded-full" />
+  )}
+
+                <p
+                  className={`text-xs truncate ${
+                    user.isOnline ? "text-green-500" : "text-gray-500"
+                  }`}
+                >
+                  {user.isOnline
+                    ? "Active now"
+                    : user.department
+                    ? `${user.department}${
+                        user.institution ? ` · ${user.institution}` : ""
+                      }`
+                    : "Tap to chat"}
+                </p>
+              </div>
                 </div>
 
                 <div className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">

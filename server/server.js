@@ -21,6 +21,7 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const app = express();
 
 const server = http.createServer(app);
+const onlineUsers = new Map();
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -77,12 +78,33 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   socket.on("join", (userId) => {
-    socket.join(userId.toString());
+    const id = userId.toString();
 
-    console.log(`User ${userId} joined room`);
+    socket.join(id);
+
+    onlineUsers.set(id, socket.id);
+
+    // Tell everyone this user is online
+    io.emit("userOnline", id);
+
+    console.log(`User ${id} is online`);
   });
 
   socket.on("disconnect", () => {
+    // Find which user belongs to this socket
+    for (const [userId, socketId] of onlineUsers.entries()) {
+      if (socketId === socket.id) {
+        onlineUsers.delete(userId);
+
+        // Tell everyone this user is offline
+        io.emit("userOffline", userId);
+
+        console.log(`User ${userId} is offline`);
+
+        break;
+      }
+    }
+
     console.log("User disconnected:", socket.id);
   });
 });

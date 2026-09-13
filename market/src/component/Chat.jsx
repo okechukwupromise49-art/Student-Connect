@@ -10,6 +10,7 @@ import { PageLoader } from "../component/Loader";
 import socket from "../socket";
 
 
+
 export default function ChatPage() {
   const { userId } = useParams();
   const [searchParams] = useSearchParams();
@@ -22,6 +23,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [me, setMe] = useState(null);
+  const [isOnline, setIsOnline] = useState(false);
 
   const bottomRef = useRef(null);
 
@@ -63,8 +65,8 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
- 
-// REAL-TIME CHAT
+// ===============================
+// SOCKET.IO - CHAT + ACTIVE STATUS
 // ===============================
 useEffect(() => {
   if (!userId || !me?._id) return;
@@ -74,6 +76,9 @@ useEffect(() => {
   // Join my personal room
   socket.emit("join", me._id);
 
+  // ===============================
+  // NEW MESSAGE
+  // ===============================
   const handleNewMessage = (message) => {
     const senderId =
       message.sender?._id?.toString() ||
@@ -86,7 +91,6 @@ useEffect(() => {
     const currentUserId = me._id.toString();
     const chatUserId = userId.toString();
 
-    // Only add messages belonging to this conversation
     const belongsToThisChat =
       (senderId === currentUserId && receiverId === chatUserId) ||
       (senderId === chatUserId && receiverId === currentUserId);
@@ -94,7 +98,6 @@ useEffect(() => {
     if (!belongsToThisChat) return;
 
     setMessages((prev) => {
-      // Prevent duplicate message
       const alreadyExists = prev.some(
         (msg) => msg._id === message._id
       );
@@ -105,15 +108,38 @@ useEffect(() => {
     });
   };
 
+  // ===============================
+  // USER ONLINE
+  // ===============================
+  const handleUserOnline = (onlineUserId) => {
+    if (onlineUserId.toString() === userId.toString()) {
+      setIsOnline(true);
+    }
+  };
+
+  // ===============================
+  // USER OFFLINE
+  // ===============================
+  const handleUserOffline = (offlineUserId) => {
+    if (offlineUserId.toString() === userId.toString()) {
+      setIsOnline(false);
+    }
+  };
+
   socket.on("newMessage", handleNewMessage);
+  socket.on("userOnline", handleUserOnline);
+  socket.on("userOffline", handleUserOffline);
 
   return () => {
     socket.off("newMessage", handleNewMessage);
+    socket.off("userOnline", handleUserOnline);
+    socket.off("userOffline", handleUserOffline);
+
     socket.disconnect();
   };
 }, [userId, me?._id]);
 
-    
+//handle send btn
 
   const handleSend = async (e) => {
     e?.preventDefault();
@@ -180,6 +206,13 @@ useEffect(() => {
               <p className="text-xs text-gray-500 truncate">
                 {otherUser?.department || "Student Connect"}
               </p>
+              <p className="text-xs truncate">
+              {isOnline ? (
+                <span className="text-green-500">🟢 Active now</span>
+              ) : (
+                <span className="text-gray-400">Offline</span>
+              )}
+            </p>
             </div>
           </button>
         </div>
