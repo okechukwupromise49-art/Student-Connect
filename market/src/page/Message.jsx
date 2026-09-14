@@ -21,6 +21,7 @@ export default function Messages() {
   const [search, setSearch] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [isOnline, setIsOnline] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -114,8 +115,24 @@ useEffect(() => {
   };
 
   socket.on("userOnline", handleUserOnline);
-  socket.on("userOffline", handleUserOffline);
+  socket.on("userOffline", handleUserOffline);  
 
+
+  const handleNewMessage = (message) => {
+  const senderId =
+    message.sender?._id?.toString() ||
+    message.sender?.toString();
+
+  const myId = currentUser._id.toString();
+
+  // Only count messages sent TO me
+  if (senderId !== myId) {
+    setUnreadCount((prev) => prev + 1);
+  }
+};
+
+socket.on("newMessage", handleNewMessage);
+socket.off("newMessage", handleNewMessage);
   return () => {
     socket.off("userOnline", handleUserOnline);
     socket.off("userOffline", handleUserOffline);
@@ -143,8 +160,14 @@ useEffect(() => {
             </p>
           </div>
 
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+         <div className="relative w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
             <MessageCircle size={20} className="text-indigo-600" />
+
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </div>
         </div>
       </header>
