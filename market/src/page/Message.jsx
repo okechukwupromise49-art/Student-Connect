@@ -10,7 +10,7 @@ import {
 import axios from "axios";
 import { toast } from "react-toastify";
 import API_URL from "../Api";
-import studySpher from "../asse6ts/studySpher.jpeg";
+import studySpher from "../assets/studySpher.jpeg";
 import { PageLoader } from "../component/Loader";
 import socket from "../socket";
 
