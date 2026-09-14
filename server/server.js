@@ -82,24 +82,52 @@ io.on("connection", (socket) => {
 
     socket.join(id);
 
-    onlineUsers.set(id, socket.id);
+    if (!onlineUsers.has(id)) {
+      onlineUsers.set(id, new Set());
+    }
 
-    // Tell everyone this user is online
-    io.emit("userOnline", id);
+    onlineUsers.get(id).add(socket.id);
 
-    console.log(`User ${id} is online`);
+    socket.emit(
+      "onlineUsers",
+      Array.from(onlineUsers.keys())
+    );
+
+    if (onlineUsers.get(id).size === 1) {
+      socket.broadcast.emit("userOnline", id);
+    }
   });
 
+  // ===============================
+  // USER IS TYPING
+  // ===============================
+  socket.on("typing", ({ receiverId, senderId }) => {
+    socket.to(receiverId.toString()).emit("userTyping", {
+      senderId: senderId.toString(),
+    });
+  });
+
+  // ===============================
+  // USER STOPPED TYPING
+  // ===============================
+  socket.on("stopTyping", ({ receiverId, senderId }) => {
+    socket.to(receiverId.toString()).emit("userStoppedTyping", {
+      senderId: senderId.toString(),
+    });
+  });
+
+  // ===============================
+  // DISCONNECT
+  // ===============================
   socket.on("disconnect", () => {
-    // Find which user belongs to this socket
-    for (const [userId, socketId] of onlineUsers.entries()) {
-      if (socketId === socket.id) {
-        onlineUsers.delete(userId);
+    for (const [userId, sockets] of onlineUsers.entries()) {
+      if (sockets.has(socket.id)) {
+        sockets.delete(socket.id);
 
-        // Tell everyone this user is offline
-        io.emit("userOffline", userId);
-
-        console.log(`User ${userId} is offline`);
+        if (sockets.size === 0) {
+          onlineUsers.delete(userId);
+          socket.broadcast.emit("userOffline", userId);
+        }
 
         break;
       }
