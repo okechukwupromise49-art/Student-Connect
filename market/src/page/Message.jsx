@@ -80,7 +80,7 @@ export default function Messages() {
   };
 
  // ===============================
-// ACTIVE / ONLINE SYSTEM
+// ACTIVE + REAL-TIME MESSAGE SYSTEM
 // ===============================
 useEffect(() => {
   if (!currentUser?._id) return;
@@ -90,6 +90,9 @@ useEffect(() => {
   // Join my personal room
   socket.emit("join", currentUser._id);
 
+  // ===============================
+  // USER ONLINE
+  // ===============================
   const handleUserOnline = (onlineUserId) => {
     const id = onlineUserId.toString();
 
@@ -102,6 +105,9 @@ useEffect(() => {
     );
   };
 
+  // ===============================
+  // USER OFFLINE
+  // ===============================
   const handleUserOffline = (offlineUserId) => {
     const id = offlineUserId.toString();
 
@@ -114,31 +120,79 @@ useEffect(() => {
     );
   };
 
-  socket.on("userOnline", handleUserOnline);
-  socket.on("userOffline", handleUserOffline);  
-
-
+  // ===============================
+  // NEW MESSAGE
+  // ===============================
   const handleNewMessage = (message) => {
-  const senderId =
-    message.sender?._id?.toString() ||
-    message.sender?.toString();
+    const senderId =
+      message.sender?._id?.toString() ||
+      message.sender?.toString();
 
-  const myId = currentUser._id.toString();
+    const receiverId =
+      message.receiver?._id?.toString() ||
+      message.receiver?.toString();
 
-  // Only count messages sent TO me
-  if (senderId !== myId) {
-    setUnreadCount((prev) => prev + 1);
-  }
-};
+    const myId = currentUser._id.toString();
 
-socket.on("newMessage", handleNewMessage);
-socket.off("newMessage", handleNewMessage);
+    // Find the other person
+    const otherUserId =
+      senderId === myId ? receiverId : senderId;
+
+    setFollowers((prev) => {
+      const index = prev.findIndex(
+        (user) => user._id?.toString() === otherUserId
+      );
+
+      // If this person isn't in our followers list
+      if (index === -1) {
+        return prev;
+      }
+
+      // Copy the user and update message information
+      const updatedUser = {
+        ...prev[index],
+        lastMessage: message.text,
+        lastMessageAt: message.createdAt,
+
+        // If the message is from the other person,
+        // mark it as unread
+        unread:
+          senderId !== myId
+            ? (prev[index].unread || 0) + 1
+            : prev[index].unread || 0,
+      };
+
+      // Remove user from current position
+      const newList = [...prev];
+      newList.splice(index, 1);
+
+      // Put user at the TOP
+      newList.unshift(updatedUser);
+
+      return newList;
+    });
+
+    // Update total unread count
+    if (senderId !== myId) {
+      setUnreadCount((prev) => prev + 1);
+    }
+  };
+
+  // Register listeners
+  socket.on("userOnline", handleUserOnline);
+  socket.on("userOffline", handleUserOffline);
+  socket.on("newMessage", handleNewMessage);
+
+  // Cleanup ONLY when component unmounts
   return () => {
     socket.off("userOnline", handleUserOnline);
     socket.off("userOffline", handleUserOffline);
+    socket.off("newMessage", handleNewMessage);
+
     socket.disconnect();
   };
 }, [currentUser?._id]);
+
   if (loading) return <PageLoader />;
 
   return (
@@ -161,14 +215,14 @@ socket.off("newMessage", handleNewMessage);
           </div>
 
          <div className="relative w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-            <MessageCircle size={20} className="text-indigo-600" />
+          <MessageCircle size={20} className="text-indigo-600" />
 
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </div>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </div>
         </div>
       </header>
 
