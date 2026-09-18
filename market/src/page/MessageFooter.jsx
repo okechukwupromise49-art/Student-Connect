@@ -1,10 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  Home,
   Users,
-  Users2,
-  ShoppingBag,
   MessageCircle,
   Radio,
 } from "lucide-react";
