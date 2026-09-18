@@ -13,7 +13,7 @@ import axios from "axios";
 import API_URL from "../Api";
 import socket from "../socket";
 
-export function MarketFooter() {
+export function MessageFooter() {
   const location = useLocation();
 
   const [user, setUser] = useState(null);

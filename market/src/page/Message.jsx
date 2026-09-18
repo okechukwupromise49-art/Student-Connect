@@ -13,6 +13,7 @@ import API_URL from "../Api";
 import studySpher from "../assets/studySpher.jpeg";
 import { PageLoader } from "../component/Loader";
 import socket from "../socket";
+import { MessageFooter } from "./MessageFooter";
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -566,7 +567,7 @@ export default function Messages() {
 
           </div>
         )}
-
+    <MessageFooter/>
       </main>
     </div>
   );
