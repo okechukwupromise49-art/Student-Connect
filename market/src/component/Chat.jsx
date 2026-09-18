@@ -855,9 +855,7 @@ export default function ChatPage() {
       );
 
 
-      // IMPORTANT:
-      // Your backend needs to support
-      // multipart/form-data for this endpoint.
+
 
       const res =
         await axios.post(

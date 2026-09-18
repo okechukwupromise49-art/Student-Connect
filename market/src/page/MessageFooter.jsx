@@ -13,7 +13,7 @@ import axios from "axios";
 import API_URL from "../Api";
 import socket from "../socket";
 
-export function Footer() {
+export function MarketFooter() {
   const location = useLocation();
 
   const [user, setUser] = useState(null);
@@ -129,30 +129,22 @@ export function Footer() {
   // NAVIGATION ITEMS
   // ==========================================
   const navItems = [
-    {
-      icon: Home,
-      label: "Campus",
-      path: "/homepage",
-    },
-    {
-      icon: Users,
-      label: "Connect",
-      path: "/find",
-    },
+    
+   
     {
       icon: MessageCircle,
       label: "Message",
       path: "/messages",
     },
     {
-      icon: Radio,
-      label: "Update",
-      path: "/update",
+      icon: Group,
+      label: "Group",
+      path: "/groups",
     },
-    {
-      icon: ShoppingBag,
-      label: "Market",
-      path: "/market",
+     {
+      icon: Users,
+      label: "Connect",
+      path: "/find",
     },
   ];
 
