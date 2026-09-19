@@ -618,117 +618,80 @@ router.post(
 // EDIT MESSAGE
 // ======================================================
 
-router.put(
-  "/message/:messageId",
-  auth,
-  async (req, res) => {
-    try {
-      const {
-        messageId,
-      } = req.params;
+router.put("/message/:messageId", auth, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { text } = req.body;
+    const myId = req.user.id;
 
-      const {
-        text,
-      } = req.body;
-
-      if (
-        !text ||
-        !text.trim()
-      ) {
-        return res.status(400).json({
-          message:
-            "Message cannot be empty",
-        });
-      }
-
-      const message =
-        await Message.findById(
-          messageId
-        );
-
-      if (!message) {
-        return res.status(404).json({
-          message:
-            "Message not found",
-        });
-      }
-
-      if (
-        message.sender.toString() !==
-        req.user.id.toString()
-      ) {
-        return res.status(403).json({
-          message:
-            "You can only edit your own messages",
-        });
-      }
-
-      if (
-        message.type !==
-        "text"
-      ) {
-        return res.status(400).json({
-          message:
-            "Only text messages can be edited",
-        });
-      }
-
-      message.text =
-        text.trim();
-
-      message.edited =
-        true;
-
-      await message.save();
-
-      await message.populate(
-        "sender",
-        "full_name profileImage"
-      );
-
-      await message.populate(
-        "receiver",
-        "full_name profileImage"
-      );
-
-      const io = getIo(req);
-
-      if (io) {
-        io.to(
-          message.receiver.toString()
-        ).emit(
-          "messageUpdated",
-          message
-        );
-
-        io.to(
-          message.sender.toString()
-        ).emit(
-          "messageUpdated",
-          message
-        );
-      }
-
-      res.status(200).json({
-        message:
-          "Message updated",
-        data: message,
-      });
-    } catch (error) {
-      console.error(
-        "Edit error:",
-        error
-      );
-
-      res.status(500).json({
-        message:
-          "Failed to edit message",
-        error: error.message,
+    if (!text || !text.trim()) {
+      return res.status(400).json({
+        message: "Message cannot be empty",
       });
     }
-  }
-);
 
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({
+        message: "Message not found",
+      });
+    }
+
+    if (message.sender.toString() !== myId.toString()) {
+      return res.status(403).json({
+        message: "You can only edit your own messages",
+      });
+    }
+
+    if (message.type !== "text") {
+      return res.status(400).json({
+        message: "Only text messages can be edited",
+      });
+    }
+
+    message.text = text.trim();
+    message.edited = true;
+
+    await message.save();
+
+    await message.populate(
+      "sender",
+      "full_name profileImage"
+    );
+
+    await message.populate(
+      "receiver",
+      "full_name profileImage"
+    );
+
+    const io = req.app.get("io");
+
+    if (io) {
+      io.to(message.receiver._id.toString()).emit(
+        "messageUpdated",
+        message
+      );
+
+      io.to(message.sender._id.toString()).emit(
+        "messageUpdated",
+        message
+      );
+    }
+
+    return res.status(200).json({
+      message: "Message updated",
+      data: message,
+    });
+  } catch (error) {
+    console.error("Edit message error:", error);
+
+    return res.status(500).json({
+      message: "Failed to edit message",
+      error: error.message,
+    });
+  }
+});
 // ======================================================
 // DELETE MESSAGE
 // ======================================================
