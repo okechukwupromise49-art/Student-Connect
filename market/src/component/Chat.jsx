@@ -21,7 +21,6 @@ import {
   PhoneOff,
   MicOff,
   FileText,
-  Image as ImageIcon,
   Download,
 } from "lucide-react";
 
@@ -38,117 +37,179 @@ import API_URL from "../Api";
 import studySpher from "../assets/studySpher.jpeg";
 import { PageLoader } from "../component/Loader";
 import socket from "../socket";
-import Swal from "sweetalert2"
+import Swal from "sweetalert2";
 
 export default function ChatPage() {
   const { userId } = useParams();
 
-  const [searchParams] =
-    useSearchParams();
+  const [searchParams] = useSearchParams();
 
-  const orderId =
-    searchParams.get("orderId");
+  const orderId = searchParams.get("orderId");
 
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
 
   // ======================================================
   // STATES
   // ======================================================
 
-  const [otherUser, setOtherUser] =
-    useState(null);
+  const [otherUser, setOtherUser] = useState(null);
 
-  const [messages, setMessages] =
-    useState([]);
+  const [messages, setMessages] = useState([]);
 
-  const [text, setText] =
-    useState("");
+  const [text, setText] = useState("");
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [sending, setSending] =
-    useState(false);
+  const [sending, setSending] = useState(false);
 
-  const [me, setMe] =
-    useState(null);
+  const [me, setMe] = useState(null);
 
-  const [isOnline, setIsOnline] =
-    useState(false);
+  const [isOnline, setIsOnline] = useState(false);
 
-  const [isTyping, setIsTyping] =
-    useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   // Editing
-  const [editingMessage, setEditingMessage] =
-    useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
 
   // Menu
-  const [openMenu, setOpenMenu] =
-    useState(null);
+  const [openMenu, setOpenMenu] = useState(null);
 
   // Voice message
-  const [isRecording, setIsRecording] =
-    useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
-  const [recordingTime, setRecordingTime] =
-    useState(0);
+  const [recordingTime, setRecordingTime] = useState(0);
 
-  const [audioBlob, setAudioBlob] =
-    useState(null);
+  const [audioBlob, setAudioBlob] = useState(null);
 
-  const [audioUrl, setAudioUrl] =
-    useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
 
-  const [isSendingAudio, setIsSendingAudio] =
-    useState(false);
+  const [isSendingAudio, setIsSendingAudio] = useState(false);
 
   // Files
-  const [isSendingFile, setIsSendingFile] =
-    useState(false);
+  const [isSendingFile, setIsSendingFile] = useState(false);
 
   // Calls
-  const [callStatus, setCallStatus] =
-    useState("idle");
+  const [callStatus, setCallStatus] = useState("idle");
 
-  const [incomingCall, setIncomingCall] =
-    useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
 
-  const [isMuted, setIsMuted] =
-    useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   // ======================================================
   // REFS
   // ======================================================
 
-  const bottomRef =
-    useRef(null);
+  const bottomRef = useRef(null);
 
-  const typingTimeoutRef =
-    useRef(null);
+  const typingTimeoutRef = useRef(null);
 
-  const mediaRecorderRef =
-    useRef(null);
+  const mediaRecorderRef = useRef(null);
 
-  const audioChunksRef =
-    useRef([]);
+  const audioChunksRef = useRef([]);
 
-  const recordingTimerRef =
-    useRef(null);
+  const recordingTimerRef = useRef(null);
 
-  const fileInputRef =
-    useRef(null);
+  const fileInputRef = useRef(null);
 
   // WebRTC
-  const peerConnectionRef =
-    useRef(null);
+  const peerConnectionRef = useRef(null);
 
-  const localStreamRef =
-    useRef(null);
+  const localStreamRef = useRef(null);
 
-  const remoteAudioRef =
-    useRef(null);
+  const remoteAudioRef = useRef(null);
+
+  // ICE candidates can sometimes arrive before
+  // the remote description is ready.
+  const pendingCandidatesRef = useRef([]);
+
+  // ======================================================
+  // LINK RENDERING
+  // ======================================================
+
+  const renderTextWithLinks = (messageText) => {
+    if (!messageText) {
+      return null;
+    }
+
+    const urlRegex =
+      /((https?:\/\/|www\.)[^\s<]+)/gi;
+
+    const parts = messageText.split(urlRegex);
+
+    const result = [];
+
+    let index = 0;
+
+    while (index < parts.length) {
+      const part = parts[index];
+
+      if (!part) {
+        index++;
+        continue;
+      }
+
+      const isUrl =
+        /^https?:\/\//i.test(part) ||
+        /^www\./i.test(part);
+
+      if (isUrl) {
+        let url = part;
+
+        // Remove common punctuation from the end
+        // so the punctuation doesn't become part
+        // of the clickable link.
+        let trailing = "";
+
+        while (
+          /[.,!?;:)\]}>'"]$/.test(url)
+        ) {
+          trailing =
+            url.slice(-1) + trailing;
+
+          url = url.slice(0, -1);
+        }
+
+        const href =
+          /^https?:\/\//i.test(url)
+            ? url
+            : `https://${url}`;
+
+        result.push(
+          <React.Fragment
+            key={`link-${index}`}
+          >
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`underline break-all ${
+                "text-indigo-200 hover:text-white"
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              {url}
+            </a>
+
+            {trailing}
+          </React.Fragment>
+        );
+      } else {
+        result.push(
+          <React.Fragment
+            key={`text-${index}`}
+          >
+            {part}
+          </React.Fragment>
+        );
+      }
+
+      index++;
+    }
+
+    return result;
+  };
 
   // ======================================================
   // FETCH CHAT
@@ -204,7 +265,9 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      return;
+    }
 
     setLoading(true);
 
@@ -223,7 +286,35 @@ export default function ChatPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isTyping]);
+
+  // ======================================================
+  // ADD MESSAGE WITHOUT DUPLICATE
+  // ======================================================
+
+  const addMessageWithoutDuplicate = (
+    newMessage
+  ) => {
+    if (!newMessage?._id) {
+      return;
+    }
+
+    setMessages((prev) => {
+      const exists = prev.some(
+        (msg) =>
+          msg._id === newMessage._id
+      );
+
+      if (exists) {
+        return prev;
+      }
+
+      return [
+        ...prev,
+        newMessage,
+      ];
+    });
+  };
 
   // ======================================================
   // SOCKET
@@ -243,6 +334,25 @@ export default function ChatPage() {
       "join",
       me._id
     );
+
+    // ====================================================
+    // ONLINE USERS
+    // ====================================================
+
+    const handleOnlineUsers = (
+      onlineUsers
+    ) => {
+      const isUserOnline =
+        onlineUsers?.some(
+          (id) =>
+            id.toString() ===
+            userId.toString()
+        );
+
+      setIsOnline(
+        Boolean(isUserOnline)
+      );
+    };
 
     // ====================================================
     // NEW MESSAGE
@@ -279,23 +389,9 @@ export default function ChatPage() {
         return;
       }
 
-      setMessages((prev) => {
-        const exists =
-          prev.some(
-            (msg) =>
-              msg._id ===
-              message._id
-          );
-
-        if (exists) {
-          return prev;
-        }
-
-        return [
-          ...prev,
-          message,
-        ];
-      });
+      addMessageWithoutDuplicate(
+        message
+      );
     };
 
     // ====================================================
@@ -304,6 +400,10 @@ export default function ChatPage() {
 
     const handleMessageUpdated =
       (message) => {
+        if (!message?._id) {
+          return;
+        }
+
         setMessages((prev) =>
           prev.map((msg) =>
             msg._id ===
@@ -338,7 +438,7 @@ export default function ChatPage() {
     const handleUserOnline =
       (onlineUserId) => {
         if (
-          onlineUserId.toString() ===
+          onlineUserId?.toString() ===
           userId.toString()
         ) {
           setIsOnline(true);
@@ -352,7 +452,7 @@ export default function ChatPage() {
     const handleUserOffline =
       (offlineUserId) => {
         if (
-          offlineUserId.toString() ===
+          offlineUserId?.toString() ===
           userId.toString()
         ) {
           setIsOnline(false);
@@ -368,7 +468,7 @@ export default function ChatPage() {
         senderId,
       }) => {
         if (
-          senderId.toString() ===
+          senderId?.toString() ===
           userId.toString()
         ) {
           setIsTyping(true);
@@ -384,7 +484,7 @@ export default function ChatPage() {
         senderId,
       }) => {
         if (
-          senderId.toString() ===
+          senderId?.toString() ===
           userId.toString()
         ) {
           setIsTyping(false);
@@ -401,7 +501,7 @@ export default function ChatPage() {
         offer,
       }) => {
         if (
-          callerId.toString() !==
+          callerId?.toString() !==
           userId.toString()
         ) {
           return;
@@ -438,6 +538,8 @@ export default function ChatPage() {
             )
           );
 
+          await flushPendingCandidates();
+
           setCallStatus(
             "connected"
           );
@@ -458,18 +560,34 @@ export default function ChatPage() {
         candidate,
       }) => {
         try {
-          if (
-            !peerConnectionRef.current ||
-            !candidate
-          ) {
+          if (!candidate) {
             return;
           }
 
-          await peerConnectionRef.current.addIceCandidate(
-            new RTCIceCandidate(
+          const peer =
+            peerConnectionRef.current;
+
+          if (!peer) {
+            pendingCandidatesRef.current.push(
               candidate
-            )
-          );
+            );
+
+            return;
+          }
+
+          if (
+            peer.remoteDescription
+          ) {
+            await peer.addIceCandidate(
+              new RTCIceCandidate(
+                candidate
+              )
+            );
+          } else {
+            pendingCandidatesRef.current.push(
+              candidate
+            );
+          }
         } catch (error) {
           console.error(
             "ICE error:",
@@ -503,6 +621,11 @@ export default function ChatPage() {
 
         endCallCleanup();
       };
+
+    socket.on(
+      "onlineUsers",
+      handleOnlineUsers
+    );
 
     socket.on(
       "newMessage",
@@ -565,6 +688,11 @@ export default function ChatPage() {
     );
 
     return () => {
+      socket.off(
+        "onlineUsers",
+        handleOnlineUsers
+      );
+
       socket.off(
         "newMessage",
         handleNewMessage
@@ -705,7 +833,10 @@ export default function ChatPage() {
     try {
       setSending(true);
 
+      // ==================================================
       // EDIT
+      // ==================================================
+
       if (
         editingMessage
       ) {
@@ -720,17 +851,16 @@ export default function ChatPage() {
             }
           );
 
+        const updatedMessage =
+          res.data.data;
+
         setMessages(
           (prev) =>
             prev.map(
               (msg) =>
                 msg._id ===
                 editingMessage._id
-                  ? {
-                      ...msg,
-                      ...res.data
-                        .data,
-                    }
+                  ? updatedMessage
                   : msg
             )
         );
@@ -741,10 +871,24 @@ export default function ChatPage() {
 
         setText("");
 
+        socket.emit(
+          "stopTyping",
+          {
+            senderId:
+              me._id,
+
+            receiverId:
+              userId,
+          }
+        );
+
         return;
       }
 
+      // ==================================================
       // NORMAL MESSAGE
+      // ==================================================
+
       const res =
         await axios.post(
           `${API_URL}/api/chat/${userId}`,
@@ -760,11 +904,8 @@ export default function ChatPage() {
           }
         );
 
-      setMessages(
-        (prev) => [
-          ...prev,
-          res.data.data,
-        ]
+      addMessageWithoutDuplicate(
+        res.data.data
       );
 
       setText("");
@@ -781,6 +922,7 @@ export default function ChatPage() {
       );
     } catch (error) {
       console.error(
+        "Send message error:",
         error
       );
 
@@ -806,16 +948,21 @@ export default function ChatPage() {
         message.text || ""
       );
 
-      Swal.fire({
+      await Swal.fire({
         icon: "success",
-        title: "success",
-        text:  "Message copied",
+        title: "Copied",
+        text: "Message copied",
         timer: 1200,
-      showConfirmButton: false,
+        showConfirmButton: false,
       });
 
       setOpenMenu(null);
-    } catch {
+    } catch (error) {
+      console.error(
+        "Copy error:",
+        error
+      );
+
       toast.error(
         "Could not copy message"
       );
@@ -855,12 +1002,18 @@ export default function ChatPage() {
   const handleDelete = async (
     messageId
   ) => {
-    const confirmed =
-      window.confirm(
-        "Delete this message?"
-      );
+    const result =
+      await Swal.fire({
+        icon: "warning",
+        title: "Delete message?",
+        text: "This message will be removed.",
+        showCancelButton: true,
+        confirmButtonText: "Delete",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#dc2626",
+      });
 
-    if (!confirmed) {
+    if (!result.isConfirmed) {
       return;
     }
 
@@ -887,6 +1040,11 @@ export default function ChatPage() {
         "Message deleted"
       );
     } catch (error) {
+      console.error(
+        "Delete error:",
+        error
+      );
+
       toast.error(
         error.response?.data
           ?.message ||
@@ -912,6 +1070,16 @@ export default function ChatPage() {
           return;
         }
 
+        if (
+          !window.MediaRecorder
+        ) {
+          toast.error(
+            "Voice recording is not supported by this browser"
+          );
+
+          return;
+        }
+
         const stream =
           await navigator.mediaDevices.getUserMedia(
             {
@@ -919,9 +1087,31 @@ export default function ChatPage() {
             }
           );
 
+        let mimeType =
+          "audio/webm";
+
+        if (
+          MediaRecorder.isTypeSupported(
+            "audio/webm;codecs=opus"
+          )
+        ) {
+          mimeType =
+            "audio/webm;codecs=opus";
+        } else if (
+          MediaRecorder.isTypeSupported(
+            "audio/webm"
+          )
+        ) {
+          mimeType =
+            "audio/webm";
+        }
+
         const recorder =
           new MediaRecorder(
-            stream
+            stream,
+            {
+              mimeType,
+            }
           );
 
         mediaRecorderRef.current =
@@ -933,8 +1123,8 @@ export default function ChatPage() {
         recorder.ondataavailable =
           (event) => {
             if (
-              event.data.size >
-              0
+              event.data &&
+              event.data.size > 0
             ) {
               audioChunksRef.current.push(
                 event.data
@@ -944,6 +1134,20 @@ export default function ChatPage() {
 
         recorder.onstop =
           () => {
+            if (
+              audioChunksRef.current
+                .length === 0
+            ) {
+              stream
+                .getTracks()
+                .forEach(
+                  (track) =>
+                    track.stop()
+                );
+
+              return;
+            }
+
             const blob =
               new Blob(
                 audioChunksRef.current,
@@ -973,6 +1177,32 @@ export default function ChatPage() {
                 (track) =>
                   track.stop()
               );
+
+            mediaRecorderRef.current =
+              null;
+          };
+
+        recorder.onerror =
+          (event) => {
+            console.error(
+              "Recorder error:",
+              event
+            );
+
+            stream
+              .getTracks()
+              .forEach(
+                (track) =>
+                  track.stop()
+              );
+
+            setIsRecording(
+              false
+            );
+
+            toast.error(
+              "Voice recording failed"
+            );
           };
 
         recorder.start();
@@ -994,6 +1224,7 @@ export default function ChatPage() {
           }, 1000);
       } catch (error) {
         console.error(
+          "Recording error:",
           error
         );
 
@@ -1003,25 +1234,93 @@ export default function ChatPage() {
       }
     };
 
+  // ======================================================
+  // STOP RECORDING
+  // ======================================================
+
   const stopRecording =
     () => {
+      const recorder =
+        mediaRecorderRef.current;
+
       if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current
-          .state !==
+        recorder &&
+        recorder.state !==
           "inactive"
       ) {
-        mediaRecorderRef.current.stop();
+        recorder.stop();
       }
 
       clearInterval(
         recordingTimerRef.current
       );
 
+      recordingTimerRef.current =
+        null;
+
       setIsRecording(
         false
       );
     };
+
+  // ======================================================
+  // CANCEL RECORDING COMPLETELY
+  // ======================================================
+
+  const cancelRecording =
+    () => {
+      const recorder =
+        mediaRecorderRef.current;
+
+      if (
+        recorder &&
+        recorder.state !==
+          "inactive"
+      ) {
+        recorder.ondataavailable =
+          null;
+
+        recorder.onstop =
+          null;
+
+        recorder.stop();
+      }
+
+      clearInterval(
+        recordingTimerRef.current
+      );
+
+      recordingTimerRef.current =
+        null;
+
+      audioChunksRef.current =
+        [];
+
+      if (audioUrl) {
+        URL.revokeObjectURL(
+          audioUrl
+        );
+      }
+
+      setAudioUrl(null);
+
+      setAudioBlob(null);
+
+      setRecordingTime(
+        0
+      );
+
+      setIsRecording(
+        false
+      );
+
+      mediaRecorderRef.current =
+        null;
+    };
+
+  // ======================================================
+  // CANCEL AUDIO PREVIEW
+  // ======================================================
 
   const cancelAudio =
     () => {
@@ -1032,8 +1331,15 @@ export default function ChatPage() {
       }
 
       setAudioUrl(null);
+
       setAudioBlob(null);
-      setRecordingTime(0);
+
+      setRecordingTime(
+        0
+      );
+
+      audioChunksRef.current =
+        [];
     };
 
   // ======================================================
@@ -1072,16 +1378,14 @@ export default function ChatPage() {
             }
           );
 
-        setMessages(
-          (prev) => [
-            ...prev,
-            res.data.data,
-          ]
+        addMessageWithoutDuplicate(
+          res.data.data
         );
 
         cancelAudio();
       } catch (error) {
         console.error(
+          "Voice send error:",
           error
         );
 
@@ -1149,11 +1453,8 @@ export default function ChatPage() {
             }
           );
 
-        setMessages(
-          (prev) => [
-            ...prev,
-            res.data.data,
-          ]
+        addMessageWithoutDuplicate(
+          res.data.data
         );
 
         toast.success(
@@ -1181,11 +1482,53 @@ export default function ChatPage() {
     };
 
   // ======================================================
+  // FLUSH PENDING ICE CANDIDATES
+  // ======================================================
+
+  const flushPendingCandidates =
+    async () => {
+      const peer =
+        peerConnectionRef.current;
+
+      if (
+        !peer ||
+        !peer.remoteDescription
+      ) {
+        return;
+      }
+
+      const candidates =
+        pendingCandidatesRef.current;
+
+      pendingCandidatesRef.current =
+        [];
+
+      for (
+        const candidate of candidates
+      ) {
+        try {
+          await peer.addIceCandidate(
+            new RTCIceCandidate(
+              candidate
+            )
+          );
+        } catch (error) {
+          console.error(
+            "Pending ICE error:",
+            error
+          );
+        }
+      }
+    };
+
+  // ======================================================
   // WEBRTC
   // ======================================================
 
   const createPeerConnection =
-    () => {
+    (
+      targetUserId
+    ) => {
       const peer =
         new RTCPeerConnection({
           iceServers: [
@@ -1210,7 +1553,7 @@ export default function ChatPage() {
               "ice-candidate",
               {
                 receiverId:
-                  userId,
+                  targetUserId,
 
                 candidate:
                   event.candidate,
@@ -1244,9 +1587,14 @@ export default function ChatPage() {
           const state =
             peer.connectionState;
 
+          console.log(
+            "WebRTC connection:",
+            state
+          );
+
           if (
             state ===
-              "connected"
+            "connected"
           ) {
             setCallStatus(
               "connected"
@@ -1256,8 +1604,6 @@ export default function ChatPage() {
           if (
             state ===
               "failed" ||
-            state ===
-              "disconnected" ||
             state ===
               "closed"
           ) {
@@ -1295,6 +1641,17 @@ export default function ChatPage() {
           return;
         }
 
+        if (!me?._id) {
+          toast.error(
+            "Your account information is not ready"
+          );
+
+          return;
+        }
+
+        pendingCandidatesRef.current =
+          [];
+
         const stream =
           await navigator.mediaDevices.getUserMedia(
             {
@@ -1306,7 +1663,9 @@ export default function ChatPage() {
           stream;
 
         const peer =
-          createPeerConnection();
+          createPeerConnection(
+            userId
+          );
 
         stream
           .getTracks()
@@ -1369,6 +1728,19 @@ export default function ChatPage() {
           return;
         }
 
+        if (
+          !navigator.mediaDevices?.getUserMedia
+        ) {
+          toast.error(
+            "Voice calling is not supported"
+          );
+
+          return;
+        }
+
+        pendingCandidatesRef.current =
+          [];
+
         const stream =
           await navigator.mediaDevices.getUserMedia(
             {
@@ -1380,7 +1752,9 @@ export default function ChatPage() {
           stream;
 
         const peer =
-          createPeerConnection();
+          createPeerConnection(
+            incomingCall.callerId
+          );
 
         stream
           .getTracks()
@@ -1398,6 +1772,8 @@ export default function ChatPage() {
             incomingCall.offer
           )
         );
+
+        await flushPendingCandidates();
 
         const answer =
           await peer.createAnswer();
@@ -1497,13 +1873,18 @@ export default function ChatPage() {
 
   const endCall =
     () => {
-      socket.emit(
-        "end-call",
-        {
-          receiverId:
-            userId,
-        }
-      );
+      if (
+        callStatus !==
+        "idle"
+      ) {
+        socket.emit(
+          "end-call",
+          {
+            receiverId:
+              userId,
+          }
+        );
+      }
 
       endCallCleanup();
     };
@@ -1517,11 +1898,13 @@ export default function ChatPage() {
       if (
         peerConnectionRef.current
       ) {
-        peerConnectionRef.current.close();
-
-        peerConnectionRef.current =
-          null;
+        try {
+          peerConnectionRef.current.close();
+        } catch {}
       }
+
+      peerConnectionRef.current =
+        null;
 
       if (
         localStreamRef.current
@@ -1544,6 +1927,9 @@ export default function ChatPage() {
           null;
       }
 
+      pendingCandidatesRef.current =
+        [];
+
       setIncomingCall(
         null
       );
@@ -1556,6 +1942,58 @@ export default function ChatPage() {
         false
       );
     };
+
+  // ======================================================
+  // COMPONENT CLEANUP
+  // ======================================================
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(
+        typingTimeoutRef.current
+      );
+
+      clearInterval(
+        recordingTimerRef.current
+      );
+
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current
+          .state !==
+          "inactive"
+      ) {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch {}
+      }
+
+      if (audioUrl) {
+        URL.revokeObjectURL(
+          audioUrl
+        );
+      }
+
+      if (
+        peerConnectionRef.current
+      ) {
+        try {
+          peerConnectionRef.current.close();
+        } catch {}
+      }
+
+      if (
+        localStreamRef.current
+      ) {
+        localStreamRef.current
+          .getTracks()
+          .forEach(
+            (track) =>
+              track.stop()
+          );
+      }
+    };
+  }, []);
 
   // ======================================================
   // FORMAT TIME
@@ -1616,7 +2054,10 @@ export default function ChatPage() {
     (
       bytes
     ) => {
-      if (!bytes) {
+      if (
+        bytes === null ||
+        bytes === undefined
+      ) {
         return "";
       }
 
@@ -1785,9 +2226,11 @@ export default function ChatPage() {
 
           {messages.length === 0 && (
             <div className="text-center py-16">
+
               <p className="text-gray-500 text-sm">
                 No messages yet. Say hello 👋
               </p>
+
             </div>
           )}
 
@@ -1862,7 +2305,7 @@ export default function ChatPage() {
                                 msg.fileUrl
                               }
                               target="_blank"
-                              rel="noreferrer"
+                              rel="noopener noreferrer"
                             >
                               <img
                                 src={
@@ -1881,7 +2324,7 @@ export default function ChatPage() {
                                 msg.fileUrl
                               }
                               target="_blank"
-                              rel="noreferrer"
+                              rel="noopener noreferrer"
                               className={`flex items-center gap-3 p-3 rounded-xl ${
                                 isMine
                                   ? "bg-indigo-500"
@@ -1902,11 +2345,13 @@ export default function ChatPage() {
                                     "File"}
                                 </p>
 
-                                <p className={`text-xs ${
-                                  isMine
-                                    ? "text-indigo-100"
-                                    : "text-gray-500"
-                                }`}>
+                                <p
+                                  className={`text-xs ${
+                                    isMine
+                                      ? "text-indigo-100"
+                                      : "text-gray-500"
+                                  }`}
+                                >
                                   {formatFileSize(
                                     msg.fileSize
                                   )}
@@ -1926,9 +2371,13 @@ export default function ChatPage() {
                         </div>
 
                       ) : (
+
                         <p className="whitespace-pre-wrap break-words">
-                          {msg.text}
+                          {renderTextWithLinks(
+                            msg.text
+                          )}
                         </p>
+
                       )}
 
                       <div className="flex items-center justify-end gap-2 mt-1">
@@ -2016,6 +2465,7 @@ export default function ChatPage() {
                                   16
                                 }
                               />
+
                               Copy
                             </button>
                           )}
@@ -2039,6 +2489,7 @@ export default function ChatPage() {
                                   16
                                 }
                               />
+
                               Edit
                             </button>
                           )}
@@ -2060,6 +2511,7 @@ export default function ChatPage() {
                                 16
                               }
                             />
+
                             Delete
                           </button>
                         )}
@@ -2270,7 +2722,9 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* REMOTE AUDIO */}
+      {/* =================================================
+          REMOTE AUDIO
+      ================================================= */}
 
       <audio
         ref={
@@ -2295,7 +2749,7 @@ export default function ChatPage() {
               onClick={
                 cancelAudio
               }
-              className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-red-500 shadow-sm"
+              className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-red-500 shadow-sm shrink-0"
             >
               <X
                 size={
@@ -2309,7 +2763,7 @@ export default function ChatPage() {
               src={
                 audioUrl
               }
-              className="flex-1 h-10"
+              className="flex-1 h-10 min-w-0"
             />
 
             <button
@@ -2320,7 +2774,7 @@ export default function ChatPage() {
               disabled={
                 isSendingAudio
               }
-              className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center disabled:opacity-50"
+              className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center disabled:opacity-50 shrink-0"
             >
               {isSendingAudio ? (
                 <Loader2
@@ -2403,7 +2857,7 @@ export default function ChatPage() {
                 onClick={
                   stopRecording
                 }
-                className="w-12 h-12 rounded-2xl bg-red-500 text-white flex items-center justify-center"
+                className="w-12 h-12 rounded-2xl bg-red-500 text-white flex items-center justify-center shrink-0"
               >
                 <Square
                   size={
@@ -2413,11 +2867,11 @@ export default function ChatPage() {
                 />
               </button>
 
-              <div className="flex-1 bg-red-50 rounded-2xl px-4 py-3">
+              <div className="flex-1 bg-red-50 rounded-2xl px-4 py-3 min-w-0">
 
                 <div className="flex items-center gap-2">
 
-                  <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+                  <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shrink-0" />
 
                   <span className="text-sm font-medium text-red-600">
                     Recording
@@ -2435,15 +2889,10 @@ export default function ChatPage() {
 
               <button
                 type="button"
-                onClick={() => {
-                  stopRecording();
-
-                  setTimeout(
-                    cancelAudio,
-                    100
-                  );
-                }}
-                className="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center"
+                onClick={
+                  cancelRecording
+                }
+                className="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center shrink-0"
               >
                 <X
                   size={
@@ -2515,7 +2964,7 @@ export default function ChatPage() {
                     ? "Edit message..."
                     : "Type a message..."
                 }
-                className="flex-1 px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                className="flex-1 min-w-0 px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
               />
 
               {/* MICROPHONE */}
