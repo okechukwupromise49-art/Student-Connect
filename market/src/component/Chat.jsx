@@ -38,6 +38,7 @@ import API_URL from "../Api";
 import studySpher from "../assets/studySpher.jpeg";
 import { PageLoader } from "../component/Loader";
 import socket from "../socket";
+import Swal from "sweetalert2"
 
 export default function ChatPage() {
   const { userId } = useParams();
