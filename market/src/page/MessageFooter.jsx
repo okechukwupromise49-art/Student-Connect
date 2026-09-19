@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import {
   Users,
   MessageCircle,
-  Radio,
+  Group,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
