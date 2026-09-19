@@ -805,9 +805,11 @@ export default function ChatPage() {
         message.text || ""
       );
 
-      toast.success(
-        "Message copied"
-      );
+      swal.fire({
+        icon: "success",
+        title: "success",
+        text:  "Message copied"
+      });
 
       setOpenMenu(null);
     } catch {
