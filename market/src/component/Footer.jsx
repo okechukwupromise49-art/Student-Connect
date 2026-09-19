@@ -120,8 +120,6 @@ export function Footer() {
         "newMessage",
         handleNewMessage
       );
-
-      socket.disconnect();
     };
   }, [user?._id]);
 
