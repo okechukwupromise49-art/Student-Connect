@@ -8,7 +8,7 @@ const Message = require("../models/message");
 const User = require("../models/user");
 const auth = require("../middleware/auth");
 
-const supabase = require("../utils/supabase");
+const { supabase } = require("../supabase/supabaseClient");
 
 // ======================================================
 // MULTER
