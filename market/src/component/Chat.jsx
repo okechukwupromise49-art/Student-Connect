@@ -806,10 +806,12 @@ export default function ChatPage() {
         message.text || ""
       );
 
-      swal.fire({
+      Swal.fire({
         icon: "success",
         title: "success",
-        text:  "Message copied"
+        text:  "Message copied",
+        timer: 1200,
+      showConfirmButton: false,
       });
 
       setOpenMenu(null);
