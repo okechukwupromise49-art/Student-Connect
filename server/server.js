@@ -116,6 +116,8 @@ io.on("connection", (socket) => {
     });
   });
 
+
+
   // ===============================
   // DISCONNECT
   // ===============================
@@ -135,6 +137,37 @@ io.on("connection", (socket) => {
 
     console.log("User disconnected:", socket.id);
   });
+
+  // ===============================
+// REAL-TIME VOICE CALL SIGNALING
+// ===============================
+
+socket.on("call-user", ({ receiverId, offer, callerId }) => {
+  io.to(receiverId.toString()).emit("incoming-call", {
+    callerId,
+    offer,
+  });
+});
+
+socket.on("answer-call", ({ callerId, answer }) => {
+  io.to(callerId.toString()).emit("call-answered", {
+    answer,
+  });
+});
+
+socket.on("ice-candidate", ({ receiverId, candidate }) => {
+  io.to(receiverId.toString()).emit("ice-candidate", {
+    candidate,
+  });
+});
+
+socket.on("reject-call", ({ callerId }) => {
+  io.to(callerId.toString()).emit("call-rejected");
+});
+
+socket.on("end-call", ({ receiverId }) => {
+  io.to(receiverId.toString()).emit("call-ended");
+});
 });
 
 const PORT = process.env.PORT || 7000;
