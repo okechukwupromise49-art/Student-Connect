@@ -1419,10 +1419,10 @@ export default function ChatPage() {
       // 15MB limit
       if (
         file.size >
-        15 * 1024 * 1024
+        50 * 1024 * 1024
       ) {
         toast.error(
-          "File must be smaller than 15MB"
+          "File must be smaller than 50MB"
         );
 
         e.target.value =

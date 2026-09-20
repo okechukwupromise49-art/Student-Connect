@@ -16,11 +16,55 @@ const { supabase } = require("../supabase/supabaseClient");
 
 const storage = multer.memoryStorage();
 
-const upload = multer({
+// ===============================
+// VOICE
+// ===============================
+
+const voiceUpload = multer({
   storage,
 
   limits: {
-    fileSize: 15 * 1024 * 1024, // 15MB
+    fileSize: 15 * 1024 * 1024,
+  },
+
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("audio/")) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error("Only audio files are allowed"),
+        false
+      );
+    }
+  },
+});
+
+// ===============================
+// FILES / IMAGES / VIDEOS / PDF
+// ===============================
+
+const fileUpload = multer({
+  storage,
+
+  limits: {
+    fileSize: 50 * 1024 * 1024,
+  },
+
+  fileFilter: (req, file, cb) => {
+    if (
+      file.mimetype.startsWith("image/") ||
+      file.mimetype.startsWith("video/") ||
+      file.mimetype === "application/pdf"
+    ) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error(
+          "Only images, videos, and PDF files are allowed"
+        ),
+        false
+      );
+    }
   },
 });
 
@@ -331,7 +375,7 @@ router.post("/:userId", auth, async (req, res) => {
 router.post(
   "/:userId/voice",
   auth,
-  upload.single("audio"),
+  voiceUpload.single("audio"),
   async (req, res) => {
     try {
       const otherId =
@@ -472,7 +516,7 @@ router.post(
 router.post(
   "/:userId/file",
   auth,
-  upload.single("file"),
+  fileUpload.single("file"),
   async (req, res) => {
     try {
       const otherId =
