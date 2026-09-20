@@ -6,11 +6,12 @@ import { Toaster } from "react-hot-toast";
 import './index.css';
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { CallProvider } from './CallProvider';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-  
+    <CallProvider>
       <BrowserRouter>
         <ToastContainer
           position="top-right"
@@ -19,6 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         />
         <App />
       </BrowserRouter>
+      </CallProvider>
   
   </React.StrictMode>
 );
