@@ -119,7 +119,6 @@ export const CallProvider = ({ children }) => {
 
       socket.emit("call-user", {
         receiverId,
-        callerId: socket.userId,
         offer,
       });
     } catch (error) {
@@ -391,29 +390,81 @@ export const CallProvider = ({ children }) => {
     setCallStatus("idle");
   };
 
-  return (
-    <CallContext.Provider
-      value={{
-        incomingCall,
-        callStatus,
-        startCall,
-        answerCall,
-        rejectCall,
-        endCall,
-        cleanupCall,
-        remoteAudioRef,
-      }}
-    >
-      {children}
+ return (
+  <CallContext.Provider
+    value={{
+      incomingCall,
+      callStatus,
+      startCall,
+      answerCall,
+      rejectCall,
+      endCall,
+      cleanupCall,
+      remoteAudioRef,
+    }}
+  >
+    {children}
 
-      {/* Global remote audio */}
-      <audio
-        ref={remoteAudioRef}
-        autoPlay
-        playsInline
-      />
-    </CallContext.Provider>
-  );
+    {/* Global remote audio */}
+    <audio
+      ref={remoteAudioRef}
+      autoPlay
+      playsInline
+    />
+
+    {/* GLOBAL INCOMING CALL UI */}
+    {incomingCall && (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="w-[90%] max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl dark:bg-gray-900">
+
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-3xl dark:bg-green-900">
+            📞
+          </div>
+
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Incoming Call
+          </h2>
+
+          {incomingCall.callerImage ? (
+          <img
+            src={incomingCall.callerImage}
+            alt={incomingCall.callerName}
+            className="mx-auto mb-4 h-20 w-20 rounded-full object-cover"
+          />
+        ) : (
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-3xl">
+            📞
+          </div>
+        )}
+
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          Incoming Call
+        </h2>
+
+        <p className="mt-2 font-medium text-gray-700 dark:text-gray-300">
+          {incomingCall.callerName} is calling...
+        </p>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={rejectCall}
+              className="flex-1 rounded-xl bg-red-500 px-4 py-3 font-semibold text-white transition hover:bg-red-600"
+            >
+              Decline
+            </button>
+
+            <button
+              onClick={answerCall}
+              className="flex-1 rounded-xl bg-green-500 px-4 py-3 font-semibold text-white transition hover:bg-green-600"
+            >
+              Answer
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </CallContext.Provider>
+);
 };
 
 // ==========================================

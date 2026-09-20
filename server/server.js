@@ -77,24 +77,51 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  socket.on("join", (userId) => {
-    const id = userId.toString();
+  // ===============================
+  // USER JOIN
+  // ===============================
+  socket.on("join", async (userId) => {
+    try {
+      const id = userId.toString();
 
-    socket.join(id);
+      // Store user identity on this socket
+      socket.userId = id;
 
-    if (!onlineUsers.has(id)) {
-      onlineUsers.set(id, new Set());
-    }
+      const User = mongoose.model("User");
 
-    onlineUsers.get(id).add(socket.id);
+      const user = await User.findById(id).select(
+        "full_name profileImage"
+      );
 
-    socket.emit(
-      "onlineUsers",
-      Array.from(onlineUsers.keys())
-    );
+      socket.userName = user?.full_name || "Student";
+      socket.userImage = user?.profileImage || null;
 
-    if (onlineUsers.get(id).size === 1) {
-      socket.broadcast.emit("userOnline", id);
+      // Join personal room
+      socket.join(id);
+
+      // Track online user
+      if (!onlineUsers.has(id)) {
+        onlineUsers.set(id, new Set());
+      }
+
+      onlineUsers.get(id).add(socket.id);
+
+      // Send current online users
+      socket.emit(
+        "onlineUsers",
+        Array.from(onlineUsers.keys())
+      );
+
+      // Tell others this user is online
+      if (onlineUsers.get(id).size === 1) {
+        socket.broadcast.emit("userOnline", id);
+      }
+
+      console.log(
+        `✅ ${socket.userName} joined socket room: ${id}`
+      );
+    } catch (error) {
+      console.error("❌ Socket join error:", error);
     }
   });
 
@@ -116,7 +143,52 @@ io.on("connection", (socket) => {
     });
   });
 
+  // ===============================
+  // REAL-TIME VOICE CALL
+  // ===============================
 
+  // CALL USER
+  socket.on("call-user", ({ receiverId, offer }) => {
+    if (!socket.userId) {
+      console.log("❌ Caller is not registered");
+      return;
+    }
+
+    console.log(
+      `📞 ${socket.userName} is calling ${receiverId}`
+    );
+
+    io.to(receiverId.toString()).emit("incoming-call", {
+      callerId: socket.userId,
+      callerName: socket.userName,
+      callerImage: socket.userImage,
+      offer,
+    });
+  });
+
+  // ANSWER CALL
+  socket.on("answer-call", ({ callerId, answer }) => {
+    io.to(callerId.toString()).emit("call-answered", {
+      answer,
+    });
+  });
+
+  // ICE CANDIDATE
+  socket.on("ice-candidate", ({ receiverId, candidate }) => {
+    io.to(receiverId.toString()).emit("ice-candidate", {
+      candidate,
+    });
+  });
+
+  // REJECT CALL
+  socket.on("reject-call", ({ callerId }) => {
+    io.to(callerId.toString()).emit("call-rejected");
+  });
+
+  // END CALL
+  socket.on("end-call", ({ receiverId }) => {
+    io.to(receiverId.toString()).emit("call-ended");
+  });
 
   // ===============================
   // DISCONNECT
@@ -128,7 +200,11 @@ io.on("connection", (socket) => {
 
         if (sockets.size === 0) {
           onlineUsers.delete(userId);
-          socket.broadcast.emit("userOffline", userId);
+
+          socket.broadcast.emit(
+            "userOffline",
+            userId
+          );
         }
 
         break;
@@ -137,37 +213,6 @@ io.on("connection", (socket) => {
 
     console.log("User disconnected:", socket.id);
   });
-
-  // ===============================
-// REAL-TIME VOICE CALL SIGNALING
-// ===============================
-
-socket.on("call-user", ({ receiverId, offer, callerId }) => {
-  io.to(receiverId.toString()).emit("incoming-call", {
-    callerId,
-    offer,
-  });
-});
-
-socket.on("answer-call", ({ callerId, answer }) => {
-  io.to(callerId.toString()).emit("call-answered", {
-    answer,
-  });
-});
-
-socket.on("ice-candidate", ({ receiverId, candidate }) => {
-  io.to(receiverId.toString()).emit("ice-candidate", {
-    candidate,
-  });
-});
-
-socket.on("reject-call", ({ callerId }) => {
-  io.to(callerId.toString()).emit("call-rejected");
-});
-
-socket.on("end-call", ({ receiverId }) => {
-  io.to(receiverId.toString()).emit("call-ended");
-});
 });
 
 const PORT = process.env.PORT || 7000;
