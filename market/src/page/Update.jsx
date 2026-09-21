@@ -11,9 +11,9 @@ import {
   Plus,
   Clock,
   Pin,
+  Image as ImageIcon,
 } from "lucide-react";
 import axios from "axios";
-import { toast } from "react-toastify";
 import API_URL from "../Api";
 import studySpher from "../assets/studySpher.jpeg";
 import { PageLoader } from "../component/Loader";
@@ -42,6 +42,7 @@ export default function Updates() {
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     const fetchUpdates = async () => {
@@ -53,7 +54,7 @@ export default function Updates() {
         setUpdates(res.data || []);
       } catch (error) {
         console.error(error);
-        // Demo data if API not ready
+        // Demo: text + image examples
         setUpdates([
           {
             _id: "1",
@@ -61,6 +62,7 @@ export default function Updates() {
             body: "Applications for the 2026 merit scholarship are open. Deadline is October 15.",
             category: "scholarship",
             pinned: true,
+            image: null, // or a URL string
             author: { full_name: "Admin", profileImage: null },
             createdAt: new Date().toISOString(),
           },
@@ -70,25 +72,18 @@ export default function Updates() {
             body: "Classes resume on Monday. Submit all practical reports before Friday.",
             category: "school",
             pinned: false,
+            image: null,
             author: { full_name: "Dean Office", profileImage: null },
             createdAt: new Date().toISOString(),
           },
           {
             _id: "3",
             title: "Internship Opportunities – MTN & Andela",
-            body: "Campus career office is collecting CVs for tech internships. Drop yours at the career center.",
+            body: "Campus career office is collecting CVs for tech internships.",
             category: "career",
             pinned: false,
+            image: null,
             author: { full_name: "Career Unit", profileImage: null },
-            createdAt: new Date().toISOString(),
-          },
-          {
-            _id: "4",
-            title: "Student Union Election Results",
-            body: "Official results will be posted on the notice board and here tomorrow.",
-            category: "news",
-            pinned: false,
-            author: { full_name: "SUG", profileImage: null },
             createdAt: new Date().toISOString(),
           },
         ]);
@@ -125,6 +120,10 @@ export default function Updates() {
     });
   };
 
+  // Support image as string URL or files[0].url
+  const getImageUrl = (item) =>
+    item.image || item.imageUrl || item.files?.[0]?.url || null;
+
   if (loading) return <PageLoader />;
 
   return (
@@ -146,7 +145,6 @@ export default function Updates() {
             </p>
           </div>
 
-          {/* Optional: only for admin later */}
           <button
             onClick={() => navigate("/updates/create")}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700"
@@ -209,57 +207,106 @@ export default function Updates() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filtered.map((item) => (
-              <article
-                key={item._id}
-                className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide ${
-                      categoryStyle[item.category] || categoryStyle.general
-                    }`}
-                  >
-                    {item.category}
-                  </span>
+            {filtered.map((item) => {
+              const imageUrl = getImageUrl(item);
 
-                  {item.pinned && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600">
-                      <Pin size={12} />
-                      Pinned
-                    </span>
+              return (
+                <article
+                  key={item._id}
+                  className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                >
+                  {/* Image (if any) */}
+                  {imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewImage(imageUrl)}
+                      className="block w-full"
+                    >
+                      <div className="relative w-full aspect-[16/10] bg-gray-100">
+                        <img
+                          src={imageUrl}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </button>
                   )}
-                </div>
 
-                <h2 className="text-lg font-bold text-gray-900 leading-snug">
-                  {item.title}
-                </h2>
+                  <div className="p-5">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide ${
+                          categoryStyle[item.category] ||
+                          categoryStyle.general
+                        }`}
+                      >
+                        {item.category}
+                      </span>
 
-                <p className="text-sm text-gray-600 mt-2 leading-relaxed line-clamp-3">
-                  {item.body}
-                </p>
+                      <div className="flex items-center gap-2">
+                        {imageUrl && (
+                          <span className="text-gray-300">
+                            <ImageIcon size={14} />
+                          </span>
+                        )}
+                        {item.pinned && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600">
+                            <Pin size={12} />
+                            Pinned
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                <div className="flex items-center gap-3 mt-4 pt-3 border-t border-gray-50">
-                  <img
-                    src={item.author?.profileImage || studySpher}
-                    alt={item.author?.full_name || "Admin"}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-gray-700 truncate">
-                      {item.author?.full_name || "Campus Admin"}
-                    </p>
-                    <p className="text-[11px] text-gray-400 flex items-center gap-1">
-                      <Clock size={11} />
-                      {formatDate(item.createdAt)}
-                    </p>
+                    <h2 className="text-lg font-bold text-gray-900 leading-snug">
+                      {item.title}
+                    </h2>
+
+                    {/* Text */}
+                    {item.body && (
+                      <p className="text-sm text-gray-600 mt-2 leading-relaxed whitespace-pre-line">
+                        {item.body}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-3 mt-4 pt-3 border-t border-gray-50">
+                      <img
+                        src={item.author?.profileImage || studySpher}
+                        alt={item.author?.full_name || "Admin"}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-gray-700 truncate">
+                          {item.author?.full_name || "Campus Admin"}
+                        </p>
+                        <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                          <Clock size={11} />
+                          {formatDate(item.createdAt)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
       </main>
+
+      {/* Fullscreen image preview */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <img
+            src={previewImage}
+            alt="Update"
+            className="max-w-full max-h-[90vh] rounded-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
