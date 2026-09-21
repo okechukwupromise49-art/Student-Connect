@@ -40,7 +40,7 @@ export default function Updates() {
   const navigate = useNavigate();
 
   const [updates, setUpdates] = useState([]);
-  const [loading, setLoading] = useState(true);
+  //const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
@@ -125,7 +125,7 @@ export default function Updates() {
   const getImageUrl = (item) =>
     item.image || item.imageUrl || item.files?.[0]?.url || null;
 
-  if (loading) return <PageLoader />;
+ // if (loading) return <PageLoader />;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 pb-28">
