@@ -18,8 +18,6 @@ import {
   Loader2,
   Plus,
   Phone,
-  PhoneOff,
-  MicOff,
   FileText,
   Download,
 } from "lucide-react";
@@ -39,6 +37,29 @@ import { PageLoader } from "../component/Loader";
 import socket from "../socket";
 import Swal from "sweetalert2";
 
+// ======================================================
+// GLOBAL CALL SYSTEM
+// ======================================================
+//
+// IMPORTANT:
+//
+// ChatPage no longer contains any WebRTC code.
+//
+// All calling logic is handled by CallProvider:
+// - WebRTC
+// - microphone for calls
+// - incoming calls
+// - accepting calls
+// - rejecting calls
+// - mute
+// - remote audio
+// - call cleanup
+//
+// ChatPage only uses startCall() to start a call.
+// ======================================================
+
+import { useCall } from "../CallProvider";
+
 export default function ChatPage() {
   const { userId } = useParams();
 
@@ -49,84 +70,117 @@ export default function ChatPage() {
   const navigate = useNavigate();
 
   // ======================================================
+  // GLOBAL CALL CONTEXT
+  // ======================================================
+  //
+  // CallProvider is mounted globally in main.jsx.
+  //
+  // ChatPage does NOT create RTCPeerConnection.
+  // ChatPage does NOT listen for WebRTC events.
+  // ChatPage does NOT manage microphone streams.
+  //
+  // It only tells CallProvider:
+  //
+  // "Call this user."
+  //
+  // ======================================================
+
+  const {
+    callStatus,
+    startCall,
+  } = useCall();
+
+  // ======================================================
   // STATES
   // ======================================================
 
+  // Other student's profile information
   const [otherUser, setOtherUser] = useState(null);
-
+  // Chat messages
   const [messages, setMessages] = useState([]);
-
+  // Text input
   const [text, setText] = useState("");
-
+  // Page loading state
   const [loading, setLoading] = useState(true);
-
+  // Sending text message
   const [sending, setSending] = useState(false);
-
+  // Current logged-in user
   const [me, setMe] = useState(null);
-
+  // Other user online status
   const [isOnline, setIsOnline] = useState(false);
-
+  // Typing indicator
   const [isTyping, setIsTyping] = useState(false);
 
-  // Editing
-  const [editingMessage, setEditingMessage] = useState(null);
-
-  // Menu
+  // EDITING
+  const [editingMessage, setEditingMessage] =
+    useState(null);
+  // ======================================================
+  // MESSAGE MENU
+  // ======================================================
   const [openMenu, setOpenMenu] = useState(null);
+  // ======================================================
+  // VOICE MESSAGE RECORDING
+  // ======================================================
+  const [isRecording, setIsRecording] =
+    useState(false);
+  const [recordingTime, setRecordingTime] =
+    useState(0);
+  const [audioBlob, setAudioBlob] =
+    useState(null);
+  const [audioUrl, setAudioUrl] =
+    useState(null);
+  const [isSendingAudio, setIsSendingAudio] =
+    useState(false);
 
-  // Voice message
-  const [isRecording, setIsRecording] = useState(false);
-
-  const [recordingTime, setRecordingTime] = useState(0);
-
-  const [audioBlob, setAudioBlob] = useState(null);
-
-  const [audioUrl, setAudioUrl] = useState(null);
-
-  const [isSendingAudio, setIsSendingAudio] = useState(false);
-
-  // Files
-  const [isSendingFile, setIsSendingFile] = useState(false);
-
-  // Calls
-  const [callStatus, setCallStatus] = useState("idle");
-
-  const [incomingCall, setIncomingCall] = useState(null);
-
-  const [isMuted, setIsMuted] = useState(false);
+  // ======================================================
+  // FILE UPLOAD
+  // ======================================================
+  const [isSendingFile, setIsSendingFile] =
+    useState(false);
 
   // ======================================================
   // REFS
   // ======================================================
 
+  // Used to automatically scroll to the latest message
   const bottomRef = useRef(null);
 
+  // Used by the typing indicator timeout
   const typingTimeoutRef = useRef(null);
 
+  // MediaRecorder instance for voice messages
   const mediaRecorderRef = useRef(null);
 
+  // Stores voice recording chunks
   const audioChunksRef = useRef([]);
 
+  // Recording timer
   const recordingTimerRef = useRef(null);
 
+  // Hidden file input
   const fileInputRef = useRef(null);
 
-  // WebRTC
-  const peerConnectionRef = useRef(null);
-
-  const localStreamRef = useRef(null);
-
-  const remoteAudioRef = useRef(null);
-
-  // ICE candidates can sometimes arrive before
-  // the remote description is ready.
-  const pendingCandidatesRef = useRef([]);
+  // ======================================================
+  // IMPORTANT
+  // ======================================================
+  // There are intentionally NO WebRTC refs here.
+  //
+  // Do NOT add:
+  //
+  // RTCPeerConnection
+  // peerConnectionRef
+  // localStreamRef
+  // remoteAudioRef
+  // pendingCandidatesRef
+  //
+  // Those belong inside CallProvider.6
 
   // ======================================================
   // LINK RENDERING
   // ======================================================
-
-  const renderTextWithLinks = (messageText) => {
+  const renderTextWithLinks = (
+    messageText
+  ) => {
     if (!messageText) {
       return null;
     }
@@ -134,7 +188,8 @@ export default function ChatPage() {
     const urlRegex =
       /((https?:\/\/|www\.)[^\s<]+)/gi;
 
-    const parts = messageText.split(urlRegex);
+    const parts =
+      messageText.split(urlRegex);
 
     const result = [];
 
@@ -155,9 +210,9 @@ export default function ChatPage() {
       if (isUrl) {
         let url = part;
 
-        // Remove common punctuation from the end
-        // so the punctuation doesn't become part
-        // of the clickable link.
+        // Remove punctuation from the end
+        // so punctuation does not become part
+        // of the clickable URL.
         let trailing = "";
 
         while (
@@ -182,9 +237,7 @@ export default function ChatPage() {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className={`underline break-all ${
-                "text-indigo-200 hover:text-white"
-              }`}
+              className="underline break-all text-indigo-200 hover:text-white"
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -217,6 +270,9 @@ export default function ChatPage() {
 
   const fetchChat = async () => {
     try {
+      // Fetch:
+      // 1. Current conversation
+      // 2. Current logged-in user
       const [
         chatRes,
         meRes,
@@ -264,6 +320,10 @@ export default function ChatPage() {
     }
   };
 
+  // ======================================================
+  // LOAD CHAT WHEN USER CHANGES
+  // ======================================================
+
   useEffect(() => {
     if (!userId) {
       return;
@@ -275,7 +335,7 @@ export default function ChatPage() {
   }, [userId]);
 
   // ======================================================
-  // SCROLL
+  // SCROLL TO BOTTOM
   // ======================================================
 
   const scrollToBottom = () => {
@@ -286,10 +346,20 @@ export default function ChatPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [
+    messages,
+    isTyping,
+  ]);
 
   // ======================================================
   // ADD MESSAGE WITHOUT DUPLICATE
+  // ======================================================
+  //
+  // Socket.IO may send a message that we already
+  // added immediately after the POST request.
+  //
+  // This prevents the same message from appearing twice.
+  //
   // ======================================================
 
   const addMessageWithoutDuplicate = (
@@ -317,7 +387,22 @@ export default function ChatPage() {
   };
 
   // ======================================================
-  // SOCKET
+  // SOCKET.IO - CHAT ONLY
+  // ======================================================
+  //
+  // This effect handles:
+  //
+  // - New messages
+  // - Message updates
+  // - Message deletion
+  // - Online status
+  // - Offline status
+  // - Typing
+  //
+  // It does NOT handle calls.
+  //
+  // Call Socket.IO events belong to CallProvider.
+  //
   // ======================================================
 
   useEffect(() => {
@@ -328,8 +413,10 @@ export default function ChatPage() {
       return;
     }
 
+    // Make sure the shared socket is connected.
     socket.connect();
 
+    // Join the user's personal room.
     socket.emit(
       "join",
       me._id
@@ -375,6 +462,8 @@ export default function ChatPage() {
       const chatId =
         userId.toString();
 
+      // Make sure this message belongs
+      // to the currently open conversation.
       const belongsToChat =
         (
           senderId === myId &&
@@ -432,7 +521,7 @@ export default function ChatPage() {
       };
 
     // ====================================================
-    // ONLINE
+    // USER ONLINE
     // ====================================================
 
     const handleUserOnline =
@@ -446,7 +535,7 @@ export default function ChatPage() {
       };
 
     // ====================================================
-    // OFFLINE
+    // USER OFFLINE
     // ====================================================
 
     const handleUserOffline =
@@ -460,7 +549,7 @@ export default function ChatPage() {
       };
 
     // ====================================================
-    // TYPING
+    // USER TYPING
     // ====================================================
 
     const handleUserTyping =
@@ -476,7 +565,7 @@ export default function ChatPage() {
       };
 
     // ====================================================
-    // STOP TYPING
+    // USER STOPPED TYPING
     // ====================================================
 
     const handleUserStoppedTyping =
@@ -492,135 +581,8 @@ export default function ChatPage() {
       };
 
     // ====================================================
-    // INCOMING CALL
+    // REGISTER CHAT SOCKET LISTENERS
     // ====================================================
-
-    const handleIncomingCall =
-      ({
-        callerId,
-        offer,
-      }) => {
-        if (
-          callerId?.toString() !==
-          userId.toString()
-        ) {
-          return;
-        }
-
-        setIncomingCall({
-          callerId,
-          offer,
-        });
-
-        setCallStatus(
-          "incoming"
-        );
-      };
-
-    // ====================================================
-    // CALL ANSWERED
-    // ====================================================
-
-    const handleCallAnswered =
-      async ({
-        answer,
-      }) => {
-        try {
-          if (
-            !peerConnectionRef.current
-          ) {
-            return;
-          }
-
-          await peerConnectionRef.current.setRemoteDescription(
-            new RTCSessionDescription(
-              answer
-            )
-          );
-
-          await flushPendingCandidates();
-
-          setCallStatus(
-            "connected"
-          );
-        } catch (error) {
-          console.error(
-            "Answer error:",
-            error
-          );
-        }
-      };
-
-    // ====================================================
-    // ICE
-    // ====================================================
-
-    const handleIceCandidate =
-      async ({
-        candidate,
-      }) => {
-        try {
-          if (!candidate) {
-            return;
-          }
-
-          const peer =
-            peerConnectionRef.current;
-
-          if (!peer) {
-            pendingCandidatesRef.current.push(
-              candidate
-            );
-
-            return;
-          }
-
-          if (
-            peer.remoteDescription
-          ) {
-            await peer.addIceCandidate(
-              new RTCIceCandidate(
-                candidate
-              )
-            );
-          } else {
-            pendingCandidatesRef.current.push(
-              candidate
-            );
-          }
-        } catch (error) {
-          console.error(
-            "ICE error:",
-            error
-          );
-        }
-      };
-
-    // ====================================================
-    // CALL REJECTED
-    // ====================================================
-
-    const handleCallRejected =
-      () => {
-        toast.info(
-          "Call declined"
-        );
-
-        endCallCleanup();
-      };
-
-    // ====================================================
-    // CALL ENDED
-    // ====================================================
-
-    const handleCallEnded =
-      () => {
-        toast.info(
-          "Call ended"
-        );
-
-        endCallCleanup();
-      };
 
     socket.on(
       "onlineUsers",
@@ -662,30 +624,9 @@ export default function ChatPage() {
       handleUserStoppedTyping
     );
 
-    socket.on(
-      "incoming-call",
-      handleIncomingCall
-    );
-
-    socket.on(
-      "call-answered",
-      handleCallAnswered
-    );
-
-    socket.on(
-      "ice-candidate",
-      handleIceCandidate
-    );
-
-    socket.on(
-      "call-rejected",
-      handleCallRejected
-    );
-
-    socket.on(
-      "call-ended",
-      handleCallEnded
-    );
+    // ====================================================
+    // CLEANUP SOCKET LISTENERS
+    // ====================================================
 
     return () => {
       socket.off(
@@ -728,31 +669,6 @@ export default function ChatPage() {
         handleUserStoppedTyping
       );
 
-      socket.off(
-        "incoming-call",
-        handleIncomingCall
-      );
-
-      socket.off(
-        "call-answered",
-        handleCallAnswered
-      );
-
-      socket.off(
-        "ice-candidate",
-        handleIceCandidate
-      );
-
-      socket.off(
-        "call-rejected",
-        handleCallRejected
-      );
-
-      socket.off(
-        "call-ended",
-        handleCallEnded
-      );
-
       clearTimeout(
         typingTimeoutRef.current
       );
@@ -781,6 +697,8 @@ export default function ChatPage() {
       return;
     }
 
+    // Tell the other user that
+    // we are currently typing.
     socket.emit(
       "typing",
       {
@@ -792,10 +710,13 @@ export default function ChatPage() {
       }
     );
 
+    // Reset the previous timeout.
     clearTimeout(
       typingTimeoutRef.current
     );
 
+    // If the user stops typing for 1 second,
+    // tell the other user that typing has stopped.
     typingTimeoutRef.current =
       setTimeout(() => {
         socket.emit(
@@ -812,7 +733,7 @@ export default function ChatPage() {
   };
 
   // ======================================================
-  // SEND TEXT
+  // SEND TEXT MESSAGE
   // ======================================================
 
   const handleSend = async (
@@ -834,7 +755,7 @@ export default function ChatPage() {
       setSending(true);
 
       // ==================================================
-      // EDIT
+      // EDIT EXISTING MESSAGE
       // ==================================================
 
       if (
@@ -871,6 +792,8 @@ export default function ChatPage() {
 
         setText("");
 
+        // Tell the other user
+        // typing has stopped.
         socket.emit(
           "stopTyping",
           {
@@ -886,15 +809,16 @@ export default function ChatPage() {
       }
 
       // ==================================================
-      // NORMAL MESSAGE
+      // SEND NORMAL MESSAGE
       // ==================================================
-
       const res =
         await axios.post(
           `${API_URL}/api/chat/${userId}`,
           {
             text: value,
 
+            // Include market order ID
+            // when this chat came from an order.
             orderId:
               orderId ||
               undefined,
@@ -904,12 +828,15 @@ export default function ChatPage() {
           }
         );
 
+      // Add the message immediately.
       addMessageWithoutDuplicate(
         res.data.data
       );
 
+      // Clear input.
       setText("");
 
+      // Stop typing indicator.
       socket.emit(
         "stopTyping",
         {
@@ -937,9 +864,8 @@ export default function ChatPage() {
   };
 
   // ======================================================
-  // COPY
+  // COPY MESSAGE
   // ======================================================
-
   const handleCopy = async (
     message
   ) => {
@@ -947,7 +873,6 @@ export default function ChatPage() {
       await navigator.clipboard.writeText(
         message.text || ""
       );
-
       await Swal.fire({
         icon: "success",
         title: "Copied",
@@ -955,7 +880,6 @@ export default function ChatPage() {
         timer: 1200,
         showConfirmButton: false,
       });
-
       setOpenMenu(null);
     } catch (error) {
       console.error(
@@ -970,9 +894,8 @@ export default function ChatPage() {
   };
 
   // ======================================================
-  // EDIT
+  // START EDITING MESSAGE
   // ======================================================
-
   const handleEdit = (
     message
   ) => {
@@ -987,6 +910,9 @@ export default function ChatPage() {
     setOpenMenu(null);
   };
 
+  // ======================================================
+  // CANCEL EDIT
+  // ======================================================
   const cancelEdit = () => {
     setEditingMessage(
       null
@@ -996,9 +922,8 @@ export default function ChatPage() {
   };
 
   // ======================================================
-  // DELETE
+  // DELETE MESSAGE
   // ======================================================
-
   const handleDelete = async (
     messageId
   ) => {
@@ -1054,12 +979,20 @@ export default function ChatPage() {
   };
 
   // ======================================================
-  // RECORD VOICE MESSAGE
+  // START VOICE MESSAGE RECORDING
+  // ======================================================
+  // IMPORTANT:
+  //
+  // This is NOT WebRTC calling.
+  //
+  // MediaRecorder is being used only to create
+  // a voice message that can be uploaded to Supabase.
   // ======================================================
 
   const startRecording =
     async () => {
       try {
+        // Check browser microphone support.
         if (
           !navigator.mediaDevices?.getUserMedia
         ) {
@@ -1070,6 +1003,7 @@ export default function ChatPage() {
           return;
         }
 
+        // Check MediaRecorder support.
         if (
           !window.MediaRecorder
         ) {
@@ -1080,6 +1014,7 @@ export default function ChatPage() {
           return;
         }
 
+        // Ask for microphone access.
         const stream =
           await navigator.mediaDevices.getUserMedia(
             {
@@ -1087,6 +1022,7 @@ export default function ChatPage() {
             }
           );
 
+        // Choose a supported audio format.
         let mimeType =
           "audio/webm";
 
@@ -1106,6 +1042,7 @@ export default function ChatPage() {
             "audio/webm";
         }
 
+        // Create MediaRecorder.
         const recorder =
           new MediaRecorder(
             stream,
@@ -1117,8 +1054,13 @@ export default function ChatPage() {
         mediaRecorderRef.current =
           recorder;
 
+        // Clear previous chunks.
         audioChunksRef.current =
           [];
+
+        // ==================================================
+        // AUDIO DATA
+        // ==================================================
 
         recorder.ondataavailable =
           (event) => {
@@ -1131,6 +1073,10 @@ export default function ChatPage() {
               );
             }
           };
+
+        // ==================================================
+        // RECORDING STOPPED
+        // ==================================================
 
         recorder.onstop =
           () => {
@@ -1148,6 +1094,7 @@ export default function ChatPage() {
               return;
             }
 
+            // Combine all audio chunks into one Blob.
             const blob =
               new Blob(
                 audioChunksRef.current,
@@ -1158,6 +1105,7 @@ export default function ChatPage() {
                 }
               );
 
+            // Create a local preview URL.
             const url =
               URL.createObjectURL(
                 blob
@@ -1171,6 +1119,7 @@ export default function ChatPage() {
               url
             );
 
+            // Stop microphone after recording.
             stream
               .getTracks()
               .forEach(
@@ -1181,6 +1130,10 @@ export default function ChatPage() {
             mediaRecorderRef.current =
               null;
           };
+
+        // ==================================================
+        // RECORDING ERROR
+        // ==================================================
 
         recorder.onerror =
           (event) => {
@@ -1205,6 +1158,7 @@ export default function ChatPage() {
             );
           };
 
+        // Start recording.
         recorder.start();
 
         setIsRecording(
@@ -1215,6 +1169,7 @@ export default function ChatPage() {
           0
         );
 
+        // Start timer.
         recordingTimerRef.current =
           setInterval(() => {
             setRecordingTime(
@@ -1235,7 +1190,7 @@ export default function ChatPage() {
     };
 
   // ======================================================
-  // STOP RECORDING
+  // STOP VOICE RECORDING
   // ======================================================
 
   const stopRecording =
@@ -1277,6 +1232,9 @@ export default function ChatPage() {
         recorder.state !==
           "inactive"
       ) {
+        // Remove callbacks so that
+        // a cancelled recording does not
+        // create an audio preview.
         recorder.ondataavailable =
           null;
 
@@ -1345,7 +1303,14 @@ export default function ChatPage() {
   // ======================================================
   // SEND VOICE MESSAGE
   // ======================================================
-
+  //
+  // This uploads the recorded audio to:
+  //
+  // POST /api/chat/:userId/voice
+  //
+  // It is separate from WebRTC calling.
+  //
+  // ======================================================
   const sendAudio =
     async () => {
       if (
@@ -1382,6 +1347,7 @@ export default function ChatPage() {
           res.data.data
         );
 
+        // Clear audio preview after successful upload.
         cancelAudio();
       } catch (error) {
         console.error(
@@ -1416,7 +1382,8 @@ export default function ChatPage() {
         return;
       }
 
-      // 15MB limit
+      // Maximum file size:
+      // 50MB
       if (
         file.size >
         50 * 1024 * 1024
@@ -1476,475 +1443,27 @@ export default function ChatPage() {
           false
         );
 
+        // Reset input so the same file
+        // can be selected again later.
         e.target.value =
           "";
       }
     };
 
   // ======================================================
-  // FLUSH PENDING ICE CANDIDATES
-  // ======================================================
-
-  const flushPendingCandidates =
-    async () => {
-      const peer =
-        peerConnectionRef.current;
-
-      if (
-        !peer ||
-        !peer.remoteDescription
-      ) {
-        return;
-      }
-
-      const candidates =
-        pendingCandidatesRef.current;
-
-      pendingCandidatesRef.current =
-        [];
-
-      for (
-        const candidate of candidates
-      ) {
-        try {
-          await peer.addIceCandidate(
-            new RTCIceCandidate(
-              candidate
-            )
-          );
-        } catch (error) {
-          console.error(
-            "Pending ICE error:",
-            error
-          );
-        }
-      }
-    };
-
-  // ======================================================
-  // WEBRTC
-  // ======================================================
-
-  const createPeerConnection =
-    (
-      targetUserId
-    ) => {
-      const peer =
-        new RTCPeerConnection({
-          iceServers: [
-            {
-              urls:
-                "stun:stun.l.google.com:19302",
-            },
-
-            {
-              urls:
-                "stun:stun1.l.google.com:19302",
-            },
-          ],
-        });
-
-      peer.onicecandidate =
-        (event) => {
-          if (
-            event.candidate
-          ) {
-            socket.emit(
-              "ice-candidate",
-              {
-                receiverId:
-                  targetUserId,
-
-                candidate:
-                  event.candidate,
-              }
-            );
-          }
-        };
-
-      peer.ontrack =
-        (event) => {
-          const stream =
-            event.streams?.[0];
-
-          if (
-            stream &&
-            remoteAudioRef.current
-          ) {
-            remoteAudioRef.current.srcObject =
-              stream;
-
-            remoteAudioRef.current
-              .play()
-              .catch(
-                () => {}
-              );
-          }
-        };
-
-      peer.onconnectionstatechange =
-        () => {
-          const state =
-            peer.connectionState;
-
-          console.log(
-            "WebRTC connection:",
-            state
-          );
-
-          if (
-            state ===
-            "connected"
-          ) {
-            setCallStatus(
-              "connected"
-            );
-          }
-
-          if (
-            state ===
-              "failed" ||
-            state ===
-              "closed"
-          ) {
-            endCallCleanup();
-          }
-        };
-
-      peerConnectionRef.current =
-        peer;
-
-      return peer;
-    };
-
-  // ======================================================
-  // START CALL
-  // ======================================================
-
-  const startCall =
-    async () => {
-      try {
-        if (
-          callStatus !==
-          "idle"
-        ) {
-          return;
-        }
-
-        if (
-          !navigator.mediaDevices?.getUserMedia
-        ) {
-          toast.error(
-            "Voice calling is not supported by this browser"
-          );
-
-          return;
-        }
-
-        if (!me?._id) {
-          toast.error(
-            "Your account information is not ready"
-          );
-
-          return;
-        }
-
-        pendingCandidatesRef.current =
-          [];
-
-        const stream =
-          await navigator.mediaDevices.getUserMedia(
-            {
-              audio: true,
-            }
-          );
-
-        localStreamRef.current =
-          stream;
-
-        const peer =
-          createPeerConnection(
-            userId
-          );
-
-        stream
-          .getTracks()
-          .forEach(
-            (track) => {
-              peer.addTrack(
-                track,
-                stream
-              );
-            }
-          );
-
-        const offer =
-          await peer.createOffer();
-
-        await peer.setLocalDescription(
-          offer
-        );
-
-        socket.emit(
-          "call-user",
-          {
-            receiverId:
-              userId,
-
-            callerId:
-              me._id,
-
-            offer,
-          }
-        );
-
-        setCallStatus(
-          "calling"
-        );
-      } catch (error) {
-        console.error(
-          "Start call error:",
-          error
-        );
-
-        endCallCleanup();
-
-        toast.error(
-          "Could not start call"
-        );
-      }
-    };
-
-  // ======================================================
-  // ACCEPT CALL
-  // ======================================================
-
-  const acceptCall =
-    async () => {
-      try {
-        if (
-          !incomingCall
-        ) {
-          return;
-        }
-
-        if (
-          !navigator.mediaDevices?.getUserMedia
-        ) {
-          toast.error(
-            "Voice calling is not supported"
-          );
-
-          return;
-        }
-
-        pendingCandidatesRef.current =
-          [];
-
-        const stream =
-          await navigator.mediaDevices.getUserMedia(
-            {
-              audio: true,
-            }
-          );
-
-        localStreamRef.current =
-          stream;
-
-        const peer =
-          createPeerConnection(
-            incomingCall.callerId
-          );
-
-        stream
-          .getTracks()
-          .forEach(
-            (track) => {
-              peer.addTrack(
-                track,
-                stream
-              );
-            }
-          );
-
-        await peer.setRemoteDescription(
-          new RTCSessionDescription(
-            incomingCall.offer
-          )
-        );
-
-        await flushPendingCandidates();
-
-        const answer =
-          await peer.createAnswer();
-
-        await peer.setLocalDescription(
-          answer
-        );
-
-        socket.emit(
-          "answer-call",
-          {
-            callerId:
-              incomingCall.callerId,
-
-            answer,
-          }
-        );
-
-        setIncomingCall(
-          null
-        );
-
-        setCallStatus(
-          "connected"
-        );
-      } catch (error) {
-        console.error(
-          "Accept call error:",
-          error
-        );
-
-        endCallCleanup();
-
-        toast.error(
-          "Could not accept call"
-        );
-      }
-    };
-
-  // ======================================================
-  // REJECT CALL
-  // ======================================================
-
-  const rejectCall =
-    () => {
-      if (
-        incomingCall
-      ) {
-        socket.emit(
-          "reject-call",
-          {
-            callerId:
-              incomingCall.callerId,
-          }
-        );
-      }
-
-      setIncomingCall(
-        null
-      );
-
-      setCallStatus(
-        "idle"
-      );
-    };
-
-  // ======================================================
-  // MUTE
-  // ======================================================
-
-  const toggleMute =
-    () => {
-      const stream =
-        localStreamRef.current;
-
-      if (!stream) {
-        return;
-      }
-
-      stream
-        .getAudioTracks()
-        .forEach(
-          (track) => {
-            track.enabled =
-              !track.enabled;
-          }
-        );
-
-      setIsMuted(
-        (prev) => !prev
-      );
-    };
-
-  // ======================================================
-  // END CALL
-  // ======================================================
-
-  const endCall =
-    () => {
-      if (
-        callStatus !==
-        "idle"
-      ) {
-        socket.emit(
-          "end-call",
-          {
-            receiverId:
-              userId,
-          }
-        );
-      }
-
-      endCallCleanup();
-    };
-
-  // ======================================================
-  // CLEANUP CALL
-  // ======================================================
-
-  const endCallCleanup =
-    () => {
-      if (
-        peerConnectionRef.current
-      ) {
-        try {
-          peerConnectionRef.current.close();
-        } catch {}
-      }
-
-      peerConnectionRef.current =
-        null;
-
-      if (
-        localStreamRef.current
-      ) {
-        localStreamRef.current
-          .getTracks()
-          .forEach(
-            (track) =>
-              track.stop()
-          );
-
-        localStreamRef.current =
-          null;
-      }
-
-      if (
-        remoteAudioRef.current
-      ) {
-        remoteAudioRef.current.srcObject =
-          null;
-      }
-
-      pendingCandidatesRef.current =
-        [];
-
-      setIncomingCall(
-        null
-      );
-
-      setCallStatus(
-        "idle"
-      );
-
-      setIsMuted(
-        false
-      );
-    };
-
-  // ======================================================
   // COMPONENT CLEANUP
+  // ======================================================
+  //
+  // Clean up:
+  // - typing timer
+  // - recording timer
+  // - MediaRecorder
+  // - audio preview URL
+  //
+  // Notice there is NO WebRTC cleanup here.
+  //
+  // CallProvider owns WebRTC cleanup.
+  //
   // ======================================================
 
   useEffect(() => {
@@ -1973,30 +1492,11 @@ export default function ChatPage() {
           audioUrl
         );
       }
-
-      if (
-        peerConnectionRef.current
-      ) {
-        try {
-          peerConnectionRef.current.close();
-        } catch {}
-      }
-
-      if (
-        localStreamRef.current
-      ) {
-        localStreamRef.current
-          .getTracks()
-          .forEach(
-            (track) =>
-              track.stop()
-          );
-      }
     };
   }, []);
 
   // ======================================================
-  // FORMAT TIME
+  // FORMAT MESSAGE TIME
   // ======================================================
 
   const formatTime = (
@@ -2018,7 +1518,7 @@ export default function ChatPage() {
   };
 
   // ======================================================
-  // RECORDING TIME
+  // FORMAT RECORDING TIME
   // ======================================================
 
   const formatRecordingTime =
@@ -2047,7 +1547,7 @@ export default function ChatPage() {
     };
 
   // ======================================================
-  // FILE SIZE
+  // FORMAT FILE SIZE
   // ======================================================
 
   const formatFileSize =
@@ -2110,7 +1610,10 @@ export default function ChatPage() {
 
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
 
+          {/* BACK BUTTON */}
+
           <button
+            type="button"
             onClick={() =>
               navigate(-1)
             }
@@ -2121,7 +1624,10 @@ export default function ChatPage() {
             />
           </button>
 
+          {/* OTHER USER */}
+
           <button
+            type="button"
             onClick={() =>
               navigate(
                 `/profile/${otherUser?._id}`
@@ -2143,6 +1649,8 @@ export default function ChatPage() {
                 }
                 className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
               />
+
+              {/* Online indicator */}
 
               {isOnline && (
                 <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
@@ -2184,12 +1692,18 @@ export default function ChatPage() {
 
           </button>
 
-          {/* CALL BUTTON */}
+          {/* =================================================
+              VOICE CALL BUTTON
+          =================================================
+          The actual call is handled by CallProvider.
+          We only pass the ID of the person we want
+          to call.
+          ================================================= */}
 
           <button
             type="button"
-            onClick={
-              startCall
+            onClick={() =>
+              startCall(userId)
             }
             disabled={
               callStatus !==
@@ -2203,6 +1717,8 @@ export default function ChatPage() {
           </button>
 
         </div>
+
+        {/* MARKET ORDER INDICATOR */}
 
         {orderId && (
           <div className="max-w-2xl mx-auto px-4 pb-2">
@@ -2224,6 +1740,8 @@ export default function ChatPage() {
 
         <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
 
+          {/* EMPTY CHAT */}
+
           {messages.length === 0 && (
             <div className="text-center py-16">
 
@@ -2234,17 +1752,22 @@ export default function ChatPage() {
             </div>
           )}
 
+          {/* MESSAGE LIST */}
+
           {messages.map(
             (
               msg
             ) => {
 
+              // Determine whether this message
+              // belongs to the current user.
               const isMine =
                 msg.sender?._id?.toString() ===
                   me?._id?.toString() ||
                 msg.sender?.toString() ===
                   me?._id?.toString();
 
+              // Determine message type.
               const isAudio =
                 msg.type ===
                   "audio" ||
@@ -2275,7 +1798,9 @@ export default function ChatPage() {
 
                   <div className="relative group max-w-[85%] sm:max-w-[70%]">
 
-                    {/* BUBBLE */}
+                    {/* =================================================
+                        MESSAGE BUBBLE
+                    ================================================= */}
 
                     <div
                       className={`px-4 py-2.5 rounded-2xl text-sm ${
@@ -2285,7 +1810,9 @@ export default function ChatPage() {
                       }`}
                     >
 
-                      {/* AUDIO */}
+                      {/* =================================================
+                          AUDIO MESSAGE
+                      ================================================= */}
 
                       {isAudio ? (
                         <audio
@@ -2297,7 +1824,13 @@ export default function ChatPage() {
                         />
                       ) : isFile ? (
 
+                        /* =================================================
+                           FILE MESSAGE
+                        ================================================= */
+
                         <div className="space-y-2">
+
+                          {/* IMAGE */}
 
                           {isImage ? (
                             <a
@@ -2319,6 +1852,9 @@ export default function ChatPage() {
                               />
                             </a>
                           ) : (
+
+                            /* OTHER FILE */
+
                             <a
                               href={
                                 msg.fileUrl
@@ -2372,6 +1908,10 @@ export default function ChatPage() {
 
                       ) : (
 
+                        /* =================================================
+                           NORMAL TEXT MESSAGE
+                        ================================================= */
+
                         <p className="whitespace-pre-wrap break-words">
                           {renderTextWithLinks(
                             msg.text
@@ -2380,7 +1920,13 @@ export default function ChatPage() {
 
                       )}
 
+                      {/* =================================================
+                          MESSAGE META
+                      ================================================= */}
+
                       <div className="flex items-center justify-end gap-2 mt-1">
+
+                        {/* Edited indicator */}
 
                         {msg.edited && (
                           <span
@@ -2393,6 +1939,8 @@ export default function ChatPage() {
                             edited
                           </span>
                         )}
+
+                        {/* Message time */}
 
                         <p
                           className={`text-[10px] ${
@@ -2410,7 +1958,9 @@ export default function ChatPage() {
 
                     </div>
 
-                    {/* MENU BUTTON */}
+                    {/* =================================================
+                        MESSAGE MENU BUTTON
+                    ================================================= */}
 
                     <button
                       type="button"
@@ -2435,7 +1985,9 @@ export default function ChatPage() {
                       />
                     </button>
 
-                    {/* MENU */}
+                    {/* =================================================
+                        MESSAGE MENU
+                    ================================================= */}
 
                     {openMenu ===
                       msg._id && (
@@ -2526,7 +2078,9 @@ export default function ChatPage() {
             }
           )}
 
-          {/* TYPING */}
+          {/* =================================================
+              TYPING INDICATOR
+          ================================================= */}
 
           {isTyping && (
             <div className="flex justify-start">
@@ -2560,6 +2114,8 @@ export default function ChatPage() {
             </div>
           )}
 
+          {/* Scroll target */}
+
           <div
             ref={
               bottomRef
@@ -2571,178 +2127,15 @@ export default function ChatPage() {
       </div>
 
       {/* =================================================
-          INCOMING CALL
-      ================================================= */}
-
-      {callStatus ===
-        "incoming" && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-5">
-
-          <div className="bg-white rounded-3xl p-7 w-full max-w-sm text-center shadow-2xl">
-
-            <img
-              src={
-                otherUser?.profileImage ||
-                studySpher
-              }
-              alt="Caller"
-              className="w-24 h-24 mx-auto rounded-full object-cover"
-            />
-
-            <h2 className="text-xl font-bold text-gray-900 mt-5">
-              {otherUser?.full_name ||
-                "Student"}
-            </h2>
-
-            <p className="text-gray-500 text-sm mt-1">
-              Incoming voice call
-            </p>
-
-            <div className="flex justify-center gap-5 mt-7">
-
-              <button
-                type="button"
-                onClick={
-                  rejectCall
-                }
-                className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center"
-              >
-                <PhoneOff
-                  size={
-                    22
-                  }
-                />
-              </button>
-
-              <button
-                type="button"
-                onClick={
-                  acceptCall
-                }
-                className="w-14 h-14 rounded-full bg-green-500 text-white flex items-center justify-center"
-              >
-                <Phone
-                  size={
-                    22
-                  }
-                />
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* =================================================
-          CALLING / CONNECTED
-      ================================================= */}
-
-      {(
-        callStatus ===
-          "calling" ||
-        callStatus ===
-          "connected"
-      ) && (
-        <div className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm flex items-center justify-center p-5">
-
-          <div className="bg-white rounded-3xl p-7 w-full max-w-sm text-center shadow-2xl">
-
-            <img
-              src={
-                otherUser?.profileImage ||
-                studySpher
-              }
-              alt="Student"
-              className="w-24 h-24 mx-auto rounded-full object-cover"
-            />
-
-            <h2 className="text-xl font-bold text-gray-900 mt-5">
-              {otherUser?.full_name ||
-                "Student"}
-            </h2>
-
-            <p className="text-sm text-gray-500 mt-2">
-              {callStatus ===
-              "calling"
-                ? "Calling..."
-                : "Connected"}
-            </p>
-
-            <div className="flex justify-center gap-4 mt-8">
-
-              {callStatus ===
-                "connected" && (
-                <button
-                  type="button"
-                  onClick={
-                    toggleMute
-                  }
-                  className={`w-14 h-14 rounded-full flex items-center justify-center ${
-                    isMuted
-                      ? "bg-red-100 text-red-600"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {isMuted ? (
-                    <MicOff
-                      size={
-                        21
-                      }
-                    />
-                  ) : (
-                    <Mic
-                      size={
-                        21
-                      }
-                    />
-                  )}
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={
-                  endCall
-                }
-                className="w-14 h-14 rounded-full bg-red-500 text-white flex items-center justify-center"
-              >
-                <PhoneOff
-                  size={
-                    21
-                  }
-                />
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* =================================================
-          REMOTE AUDIO
-      ================================================= */}
-
-      <audio
-        ref={
-          remoteAudioRef
-        }
-        autoPlay
-        playsInline
-        className="hidden"
-      />
-
-      {/* =================================================
-          AUDIO PREVIEW
+          AUDIO MESSAGE PREVIEW
       ================================================= */}
 
       {audioUrl && (
         <div className="bg-indigo-50 border-t border-indigo-100">
 
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+
+            {/* Cancel preview */}
 
             <button
               type="button"
@@ -2758,6 +2151,8 @@ export default function ChatPage() {
               />
             </button>
 
+            {/* Preview audio */}
+
             <audio
               controls
               src={
@@ -2765,6 +2160,8 @@ export default function ChatPage() {
               }
               className="flex-1 h-10 min-w-0"
             />
+
+            {/* Send audio */}
 
             <button
               type="button"
@@ -2798,7 +2195,7 @@ export default function ChatPage() {
       )}
 
       {/* =================================================
-          INPUT
+          MESSAGE INPUT
       ================================================= */}
 
       <div className="sticky bottom-0 bg-white border-t border-gray-100">
@@ -2810,7 +2207,9 @@ export default function ChatPage() {
           className="max-w-2xl mx-auto px-4 py-3"
         >
 
-          {/* EDIT BAR */}
+          {/* =================================================
+              EDIT BAR
+          ================================================= */}
 
           {editingMessage && (
             <div className="flex items-center justify-between mb-2 px-3 py-2 bg-indigo-50 rounded-xl">
@@ -2847,10 +2246,14 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* RECORDING */}
+          {/* =================================================
+              RECORDING MODE
+          ================================================= */}
 
           {isRecording ? (
             <div className="flex items-center gap-3">
+
+              {/* Stop recording */}
 
               <button
                 type="button"
@@ -2866,6 +2269,8 @@ export default function ChatPage() {
                   fill="currentColor"
                 />
               </button>
+
+              {/* Recording information */}
 
               <div className="flex-1 bg-red-50 rounded-2xl px-4 py-3 min-w-0">
 
@@ -2887,6 +2292,8 @@ export default function ChatPage() {
 
               </div>
 
+              {/* Cancel recording */}
+
               <button
                 type="button"
                 onClick={
@@ -2904,12 +2311,20 @@ export default function ChatPage() {
             </div>
           ) : (
 
+            /* =================================================
+               NORMAL INPUT MODE
+            ================================================= */
+
             <div className="flex items-center gap-2">
 
-              {/* PLUS */}
+              {/* =================================================
+                  FILE BUTTON
+              ================================================= */}
 
               {!editingMessage && (
                 <>
+                  {/* Hidden file input */}
+
                   <input
                     ref={
                       fileInputRef
@@ -2920,6 +2335,8 @@ export default function ChatPage() {
                       handleFileSelect
                     }
                   />
+
+                  {/* Open file picker */}
 
                   <button
                     type="button"
@@ -2949,7 +2366,9 @@ export default function ChatPage() {
                 </>
               )}
 
-              {/* TEXT */}
+              {/* =================================================
+                  TEXT INPUT
+              ================================================= */}
 
               <input
                 type="text"
@@ -2967,7 +2386,9 @@ export default function ChatPage() {
                 className="flex-1 min-w-0 px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
               />
 
-              {/* MICROPHONE */}
+              {/* =================================================
+                  VOICE MESSAGE BUTTON
+              ================================================= */}
 
               {!text.trim() &&
                 !editingMessage && (
@@ -2986,7 +2407,9 @@ export default function ChatPage() {
                   </button>
                 )}
 
-              {/* SEND */}
+              {/* =================================================
+                  SEND BUTTON
+              ================================================= */}
 
               {(text.trim() ||
                 editingMessage) && (
