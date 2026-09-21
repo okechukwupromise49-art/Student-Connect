@@ -17,6 +17,7 @@ import axios from "axios";
 import API_URL from "../Api";
 import studySpher from "../assets/studySpher.jpeg";
 import { PageLoader } from "../component/Loader";
+import { UpdateFooter } from "../component/UpdateFooter";
 
 const CATEGORIES = [
   { id: "all", label: "All", icon: Megaphone },
@@ -307,6 +308,8 @@ export default function Updates() {
           />
         </div>
       )}
+
+      <UpdateFooter/>
     </div>
   );
 }

@@ -19,6 +19,7 @@ import MarketItem from './component/Item'
 import Messages from './page/Message'
 import ChatPage from './component/Chat'
 import Updates from './page/Update'
+import CreateUpdate from './component/CreateUpdate'
 
 
 
@@ -45,6 +46,7 @@ function App() {
            <Route path="/messages" element={<Messages />} />
            <Route path="/chat/:userId" element={<ChatPage />} />
            <Route path="/update" element={<Updates/>} />
+           <Route path="/updates/create" element={<CreateUpdate/>} />
         </Routes>
      
     </div>
