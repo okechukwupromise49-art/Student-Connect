@@ -15,52 +15,87 @@ export const CallProvider = ({ children }) => {
   // STATE
   // =========================================================
 
+  // Stores information about an incoming call.
   const [incomingCall, setIncomingCall] = useState(null);
 
-  // idle
-  // calling
-  // incoming
-  // connecting
-  // connected
+  /*
+    Call status:
+
+    idle       -> No call
+    calling    -> We are calling someone
+    incoming   -> Someone is calling us
+    connecting  -> WebRTC is negotiating connection
+    connected   -> WebRTC connection is established
+  */
   const [callStatus, setCallStatus] = useState("idle");
 
+  // Microphone mute state.
   const [isMuted, setIsMuted] = useState(false);
 
   // =========================================================
   // REFS
   // =========================================================
 
+  // Current WebRTC peer connection.
   const peerConnectionRef = useRef(null);
 
+  // Local microphone stream.
   const localStreamRef = useRef(null);
 
+  // Global audio element used for remote audio.
   const remoteAudioRef = useRef(null);
 
-  // ICE candidates can arrive before remoteDescription exists.
+  /*
+    ICE candidates can arrive before the WebRTC
+    remote description has been applied.
+
+    Therefore, we temporarily store them here.
+  */
   const pendingCandidatesRef = useRef([]);
 
-  // The person we are currently calling / connected to.
+  // ID of the person we are talking to.
   const remoteUserIdRef = useRef(null);
 
-  // Prevent cleanup from causing unwanted state races.
+  // Prevent cleanup/state races.
   const cleaningUpRef = useRef(false);
 
   // =========================================================
-  // ADD PENDING ICE CANDIDATES
+  // FLUSH QUEUED ICE CANDIDATES
   // =========================================================
 
   const flushPendingCandidates = useCallback(async () => {
     const peer = peerConnectionRef.current;
 
-    if (!peer) return;
-
-    if (!peer.remoteDescription) {
+    if (!peer) {
+      console.log(
+        "⚠️ Cannot flush ICE candidates: no peer"
+      );
       return;
     }
 
-    const candidates = pendingCandidatesRef.current;
+    /*
+      We cannot add ICE candidates until the
+      remote description exists.
+    */
+    if (!peer.remoteDescription) {
+      console.log(
+        "⏳ Cannot flush ICE: remote description not ready"
+      );
+      return;
+    }
 
+    const candidates =
+      pendingCandidatesRef.current;
+
+    /*
+      Clear the queue only AFTER copying it.
+      This prevents candidates from being lost.
+    */
     pendingCandidatesRef.current = [];
+
+    console.log(
+      `🧊 Flushing ${candidates.length} queued ICE candidate(s)`
+    );
 
     for (const candidate of candidates) {
       try {
@@ -68,7 +103,9 @@ export const CallProvider = ({ children }) => {
           new RTCIceCandidate(candidate)
         );
 
-        console.log("✅ Pending ICE candidate added");
+        console.log(
+          "✅ Pending ICE candidate added"
+        );
       } catch (error) {
         console.error(
           "❌ Error adding pending ICE candidate:",
@@ -79,7 +116,7 @@ export const CallProvider = ({ children }) => {
   }, []);
 
   // =========================================================
-  // CLEANUP
+  // CLEANUP CALL
   // =========================================================
 
   const cleanupCall = useCallback(() => {
@@ -87,18 +124,28 @@ export const CallProvider = ({ children }) => {
 
     cleaningUpRef.current = true;
 
-    // Close WebRTC connection
+    // -------------------------------------------------------
+    // Close WebRTC peer connection
+    // -------------------------------------------------------
+
     if (peerConnectionRef.current) {
       try {
-        peerConnectionRef.current.onicecandidate = null;
-        peerConnectionRef.current.ontrack = null;
-        peerConnectionRef.current.onconnectionstatechange = null;
-        peerConnectionRef.current.oniceconnectionstatechange = null;
+        peerConnectionRef.current.onicecandidate =
+          null;
+
+        peerConnectionRef.current.ontrack =
+          null;
+
+        peerConnectionRef.current.onconnectionstatechange =
+          null;
+
+        peerConnectionRef.current.oniceconnectionstatechange =
+          null;
 
         peerConnectionRef.current.close();
       } catch (error) {
         console.error(
-          "Peer cleanup error:",
+          "❌ Peer cleanup error:",
           error
         );
       }
@@ -106,7 +153,10 @@ export const CallProvider = ({ children }) => {
       peerConnectionRef.current = null;
     }
 
+    // -------------------------------------------------------
     // Stop microphone
+    // -------------------------------------------------------
+
     if (localStreamRef.current) {
       localStreamRef.current
         .getTracks()
@@ -117,28 +167,57 @@ export const CallProvider = ({ children }) => {
       localStreamRef.current = null;
     }
 
+    // -------------------------------------------------------
     // Remove remote audio
+    // -------------------------------------------------------
+
     if (remoteAudioRef.current) {
-      remoteAudioRef.current.pause();
+      try {
+        remoteAudioRef.current.pause();
+      } catch (error) {
+        console.error(
+          "Audio cleanup error:",
+          error
+        );
+      }
+
       remoteAudioRef.current.srcObject = null;
     }
 
-    // Reset ICE
+    // -------------------------------------------------------
+    // Clear ICE candidates
+    // -------------------------------------------------------
+
     pendingCandidatesRef.current = [];
 
-    // Reset remote user
+    // -------------------------------------------------------
+    // Clear remote user
+    // -------------------------------------------------------
+
     remoteUserIdRef.current = null;
 
-    // Reset mute
+    // -------------------------------------------------------
+    // Reset microphone state
+    // -------------------------------------------------------
+
     setIsMuted(false);
 
+    // -------------------------------------------------------
     // Reset incoming call
+    // -------------------------------------------------------
+
     setIncomingCall(null);
 
-    // Reset status
+    // -------------------------------------------------------
+    // Reset call status
+    // -------------------------------------------------------
+
     setCallStatus("idle");
 
-    // Allow future calls
+    /*
+      Allow another call after the current cleanup
+      has finished.
+    */
     setTimeout(() => {
       cleaningUpRef.current = false;
     }, 0);
@@ -158,7 +237,9 @@ export const CallProvider = ({ children }) => {
       );
     }
 
-    console.log("🎙️ Requesting microphone...");
+    console.log(
+      "🎙️ Requesting microphone..."
+    );
 
     const stream =
       await navigator.mediaDevices.getUserMedia({
@@ -170,14 +251,18 @@ export const CallProvider = ({ children }) => {
         video: false,
       });
 
-    console.log("✅ Microphone permission granted");
+    console.log(
+      "✅ Microphone permission granted"
+    );
 
     localStreamRef.current = stream;
 
-    // Make sure microphone starts unmuted.
-    stream.getAudioTracks().forEach((track) => {
-      track.enabled = true;
-    });
+    // Make sure microphone starts enabled.
+    stream.getAudioTracks().forEach(
+      (track) => {
+        track.enabled = true;
+      }
+    );
 
     setIsMuted(false);
 
@@ -185,7 +270,7 @@ export const CallProvider = ({ children }) => {
   }, []);
 
   // =========================================================
-  // CREATE PEER CONNECTION
+  // CREATE WEBRTC PEER CONNECTION
   // =========================================================
 
   const createPeerConnection = useCallback(
@@ -195,6 +280,10 @@ export const CallProvider = ({ children }) => {
         targetUserId
       );
 
+      /*
+        STUN servers help both browsers discover
+        their public network addresses.
+      */
       const peer = new RTCPeerConnection({
         iceServers: [
           {
@@ -209,16 +298,21 @@ export const CallProvider = ({ children }) => {
       remoteUserIdRef.current =
         targetUserId?.toString();
 
-      // -----------------------------------------------------
-      // ICE CANDIDATES
-      // -----------------------------------------------------
+      // =====================================================
+      // SEND ICE CANDIDATES
+      // =====================================================
 
       peer.onicecandidate = (event) => {
         if (!event.candidate) {
+          console.log(
+            "🧊 ICE gathering completed"
+          );
           return;
         }
 
-        console.log("🧊 Sending ICE candidate");
+        console.log(
+          "🧊 Sending ICE candidate"
+        );
 
         socket.emit("ice-candidate", {
           receiverId: targetUserId,
@@ -226,12 +320,14 @@ export const CallProvider = ({ children }) => {
         });
       };
 
-      // -----------------------------------------------------
-      // REMOTE AUDIO
-      // -----------------------------------------------------
+      // =====================================================
+      // RECEIVE REMOTE AUDIO
+      // =====================================================
 
       peer.ontrack = async (event) => {
-        console.log("🔊 Remote audio track received");
+        console.log(
+          "🔊 Remote audio track received"
+        );
 
         const stream =
           event.streams?.[0];
@@ -253,7 +349,8 @@ export const CallProvider = ({ children }) => {
         remoteAudioRef.current.srcObject =
           stream;
 
-        remoteAudioRef.current.muted = false;
+        remoteAudioRef.current.muted =
+          false;
 
         remoteAudioRef.current.volume = 1;
 
@@ -271,9 +368,9 @@ export const CallProvider = ({ children }) => {
         }
       };
 
-      // -----------------------------------------------------
-      // CONNECTION STATE
-      // -----------------------------------------------------
+      // =====================================================
+      // WEBRTC CONNECTION STATE
+      // =====================================================
 
       peer.onconnectionstatechange = () => {
         const state =
@@ -284,14 +381,32 @@ export const CallProvider = ({ children }) => {
           state
         );
 
+        // WebRTC is currently connecting.
+        if (state === "connecting") {
+          console.log(
+            "🔄 WebRTC is connecting..."
+          );
+
+          setCallStatus("connecting");
+        }
+
+        // The actual call is connected.
         if (state === "connected") {
           console.log(
-            "✅ WebRTC call connected"
+            "✅ WEBRTC CALL CONNECTED!"
           );
 
           setCallStatus("connected");
         }
 
+        // Temporary network problem.
+        if (state === "disconnected") {
+          console.warn(
+            "⚠️ WebRTC connection disconnected"
+          );
+        }
+
+        // WebRTC could not establish connection.
         if (state === "failed") {
           console.error(
             "❌ WebRTC connection failed"
@@ -300,37 +415,62 @@ export const CallProvider = ({ children }) => {
           cleanupCall();
         }
 
+        // Connection was closed.
         if (state === "closed") {
           console.log(
             "☎️ WebRTC connection closed"
           );
-
-          cleanupCall();
         }
       };
 
-      // -----------------------------------------------------
+      // =====================================================
       // ICE CONNECTION STATE
-      // -----------------------------------------------------
+      // =====================================================
 
-      peer.oniceconnectionstatechange = () => {
-        console.log(
-          "🧊 ICE connection state:",
-          peer.iceConnectionState
-        );
+      peer.oniceconnectionstatechange =
+        () => {
+          const state =
+            peer.iceConnectionState;
 
-        if (
-          peer.iceConnectionState ===
-          "failed"
-        ) {
-          console.error(
-            "❌ ICE connection failed"
+          console.log(
+            "🧊 ICE connection state:",
+            state
           );
 
-          cleanupCall();
-        }
-      };
+          if (state === "checking") {
+            console.log(
+              "🔎 ICE is checking connection..."
+            );
+          }
 
+          if (state === "connected") {
+            console.log(
+              "✅ ICE connection established"
+            );
+          }
+
+          if (state === "completed") {
+            console.log(
+              "✅ ICE connection completed"
+            );
+          }
+
+          if (state === "disconnected") {
+            console.warn(
+              "⚠️ ICE connection disconnected"
+            );
+          }
+
+          if (state === "failed") {
+            console.error(
+              "❌ ICE connection failed"
+            );
+
+            cleanupCall();
+          }
+        };
+
+      // Save peer globally.
       peerConnectionRef.current =
         peer;
 
@@ -353,6 +493,7 @@ export const CallProvider = ({ children }) => {
           return;
         }
 
+        // Don't start another call.
         if (
           callStatus !== "idle" ||
           incomingCall
@@ -363,6 +504,7 @@ export const CallProvider = ({ children }) => {
           return;
         }
 
+        // Socket must be connected.
         if (!socket.connected) {
           console.error(
             "❌ Socket is not connected"
@@ -372,6 +514,7 @@ export const CallProvider = ({ children }) => {
 
         cleaningUpRef.current = false;
 
+        // New call starts with an empty ICE queue.
         pendingCandidatesRef.current = [];
 
         remoteUserIdRef.current =
@@ -384,17 +527,26 @@ export const CallProvider = ({ children }) => {
           receiverId
         );
 
+        // ---------------------------------------------------
         // Get microphone
+        // ---------------------------------------------------
+
         const stream =
           await getMicrophone();
 
+        // ---------------------------------------------------
         // Create peer
+        // ---------------------------------------------------
+
         const peer =
           createPeerConnection(
             receiverId
           );
 
+        // ---------------------------------------------------
         // Add microphone tracks
+        // ---------------------------------------------------
+
         stream
           .getTracks()
           .forEach((track) => {
@@ -408,7 +560,10 @@ export const CallProvider = ({ children }) => {
           "🎙️ Microphone tracks added"
         );
 
+        // ---------------------------------------------------
         // Create offer
+        // ---------------------------------------------------
+
         const offer =
           await peer.createOffer();
 
@@ -419,6 +574,10 @@ export const CallProvider = ({ children }) => {
         console.log(
           "📤 Sending call offer"
         );
+
+        // ---------------------------------------------------
+        // Send offer through Socket.IO
+        // ---------------------------------------------------
 
         socket.emit("call-user", {
           receiverId,
@@ -443,7 +602,7 @@ export const CallProvider = ({ children }) => {
   );
 
   // =========================================================
-  // INCOMING CALL
+  // HANDLE INCOMING CALL
   // =========================================================
 
   useEffect(() => {
@@ -471,6 +630,7 @@ export const CallProvider = ({ children }) => {
         return;
       }
 
+      // Make sure the offer exists.
       if (!offer) {
         console.error(
           "❌ Incoming call has no offer"
@@ -481,6 +641,15 @@ export const CallProvider = ({ children }) => {
       remoteUserIdRef.current =
         callerId?.toString();
 
+      /*
+        IMPORTANT:
+
+        We only clear the queue when a completely
+        new incoming call begins.
+
+        Once ICE candidates start arriving,
+        answerCall() must NOT clear this queue.
+      */
       pendingCandidatesRef.current = [];
 
       setIncomingCall({
@@ -509,7 +678,7 @@ export const CallProvider = ({ children }) => {
   }, [callStatus]);
 
   // =========================================================
-  // ANSWER CALL
+  // ANSWER INCOMING CALL
   // =========================================================
 
   const answerCall = useCallback(
@@ -545,19 +714,40 @@ export const CallProvider = ({ children }) => {
         remoteUserIdRef.current =
           callerId.toString();
 
-        pendingCandidatesRef.current = [];
+        /*
+          VERY IMPORTANT:
 
+          DO NOT DO THIS HERE:
+
+          pendingCandidatesRef.current = [];
+
+          ICE candidates may already have arrived
+          while the incoming call notification was
+          waiting for the user to press Answer.
+
+          We need to keep them.
+        */
+
+        // ---------------------------------------------------
         // Get microphone
+        // ---------------------------------------------------
+
         const stream =
           await getMicrophone();
 
+        // ---------------------------------------------------
         // Create peer
+        // ---------------------------------------------------
+
         const peer =
           createPeerConnection(
             callerId
           );
 
+        // ---------------------------------------------------
         // Add microphone
+        // ---------------------------------------------------
+
         stream
           .getTracks()
           .forEach((track) => {
@@ -571,9 +761,10 @@ export const CallProvider = ({ children }) => {
           "🎙️ Answer microphone added"
         );
 
-        // IMPORTANT:
-        // Set remote offer before adding
-        // queued ICE candidates.
+        // ---------------------------------------------------
+        // Apply caller's offer
+        // ---------------------------------------------------
+
         await peer.setRemoteDescription(
           new RTCSessionDescription(
             offer
@@ -584,11 +775,20 @@ export const CallProvider = ({ children }) => {
           "📥 Remote offer applied"
         );
 
-        // Add any ICE candidates that
-        // arrived before the offer.
+        // ---------------------------------------------------
+        // Add ICE candidates that arrived earlier
+        // ---------------------------------------------------
+
         await flushPendingCandidates();
 
+        console.log(
+          "🧊 Pending ICE candidates processed"
+        );
+
+        // ---------------------------------------------------
         // Create answer
+        // ---------------------------------------------------
+
         const answer =
           await peer.createAnswer();
 
@@ -600,24 +800,31 @@ export const CallProvider = ({ children }) => {
           "📤 Sending call answer"
         );
 
+        // ---------------------------------------------------
+        // Send answer back to caller
+        // ---------------------------------------------------
+
         socket.emit("answer-call", {
           callerId,
           answer,
         });
 
+        // Remove incoming-call popup.
         setIncomingCall(null);
+
+        /*
+          DO NOT set connected here.
+
+          The connection becomes "connected"
+          only when WebRTC confirms it through
+          peer.onconnectionstatechange.
+        */
+
+        setCallStatus("connecting");
       } catch (error) {
         console.error(
           "❌ Answer call error:",
           error
-        );
-
-        socket.emit(
-          "reject-call",
-          {
-            callerId:
-              incomingCall?.callerId,
-          }
         );
 
         cleanupCall();
@@ -633,65 +840,69 @@ export const CallProvider = ({ children }) => {
   );
 
   // =========================================================
-  // CALL ANSWERED
+  // RECEIVE CALL ANSWER
   // =========================================================
 
   useEffect(() => {
-    const handleCallAnswered = async ({
-      answer,
-    }) => {
-      try {
-        console.log(
-          "📥 Call answer received"
-        );
-
-        const peer =
-          peerConnectionRef.current;
-
-        if (!peer) {
-          console.error(
-            "❌ No peer connection for answer"
+    const handleCallAnswered =
+      async ({ answer }) => {
+        try {
+          console.log(
+            "📥 Call answer received"
           );
-          return;
-        }
 
-        if (!answer) {
-          console.error(
-            "❌ Empty call answer"
+          const peer =
+            peerConnectionRef.current;
+
+          if (!peer) {
+            console.error(
+              "❌ No peer connection for answer"
+            );
+            return;
+          }
+
+          if (!answer) {
+            console.error(
+              "❌ Empty call answer"
+            );
+            return;
+          }
+
+          // Apply remote answer.
+          await peer.setRemoteDescription(
+            new RTCSessionDescription(
+              answer
+            )
           );
-          return;
+
+          console.log(
+            "✅ Remote answer applied"
+          );
+
+          // Add any ICE candidates
+          // that arrived before the answer.
+          await flushPendingCandidates();
+
+          console.log(
+            "🧊 Pending ICE candidates processed"
+          );
+
+          /*
+            Do NOT mark connected here.
+
+            WebRTC itself will tell us when the
+            connection is actually established.
+          */
+          setCallStatus("connecting");
+        } catch (error) {
+          console.error(
+            "❌ Error applying call answer:",
+            error
+          );
+
+          cleanupCall();
         }
-
-        await peer.setRemoteDescription(
-          new RTCSessionDescription(
-            answer
-          )
-        );
-
-        console.log(
-          "✅ Remote answer applied"
-        );
-
-        // ICE candidates may have arrived
-        // before the answer.
-        await flushPendingCandidates();
-
-        // Don't immediately call this
-        // "connected".
-        //
-        // onconnectionstatechange will
-        // change it to connected when
-        // WebRTC really connects.
-        setCallStatus("connecting");
-      } catch (error) {
-        console.error(
-          "❌ Error applying call answer:",
-          error
-        );
-
-        cleanupCall();
-      }
-    };
+      };
 
     socket.on(
       "call-answered",
@@ -710,63 +921,71 @@ export const CallProvider = ({ children }) => {
   ]);
 
   // =========================================================
-  // ICE CANDIDATE RECEIVER
+  // RECEIVE ICE CANDIDATES
   // =========================================================
 
   useEffect(() => {
-    const handleIceCandidate = async ({
-      candidate,
-    }) => {
-      try {
-        if (!candidate) {
-          return;
-        }
+    const handleIceCandidate =
+      async ({ candidate }) => {
+        try {
+          if (!candidate) {
+            return;
+          }
 
-        const peer =
-          peerConnectionRef.current;
+          const peer =
+            peerConnectionRef.current;
 
-        if (!peer) {
+          /*
+            ICE arrived before peer creation.
+
+            Store it for later.
+          */
+          if (!peer) {
+            console.log(
+              "⏳ No peer yet. Queueing ICE candidate."
+            );
+
+            pendingCandidatesRef.current.push(
+              candidate
+            );
+
+            return;
+          }
+
+          /*
+            Peer exists but remote offer/answer
+            hasn't been applied yet.
+
+            Store the candidate.
+          */
+          if (!peer.remoteDescription) {
+            console.log(
+              "⏳ Remote description not ready. Queueing ICE."
+            );
+
+            pendingCandidatesRef.current.push(
+              candidate
+            );
+
+            return;
+          }
+
+          // Remote description exists,
+          // so we can add ICE immediately.
+          await peer.addIceCandidate(
+            new RTCIceCandidate(candidate)
+          );
+
           console.log(
-            "⏳ No peer yet. Queueing ICE candidate."
+            "🧊 ICE candidate added"
           );
-
-          pendingCandidatesRef.current.push(
-            candidate
+        } catch (error) {
+          console.error(
+            "❌ ICE candidate error:",
+            error
           );
-
-          return;
         }
-
-        // IMPORTANT:
-        // addIceCandidate can fail if
-        // remoteDescription hasn't been
-        // applied yet.
-        if (!peer.remoteDescription) {
-          console.log(
-            "⏳ Remote description not ready. Queueing ICE."
-          );
-
-          pendingCandidatesRef.current.push(
-            candidate
-          );
-
-          return;
-        }
-
-        await peer.addIceCandidate(
-          new RTCIceCandidate(candidate)
-        );
-
-        console.log(
-          "🧊 ICE candidate added"
-        );
-      } catch (error) {
-        console.error(
-          "❌ ICE candidate error:",
-          error
-        );
-      }
-    };
+      };
 
     socket.on(
       "ice-candidate",
@@ -782,7 +1001,7 @@ export const CallProvider = ({ children }) => {
   }, []);
 
   // =========================================================
-  // DECLINE CALL
+  // REJECT / DECLINE CALL
   // =========================================================
 
   const rejectCall = useCallback(() => {
@@ -809,7 +1028,7 @@ export const CallProvider = ({ children }) => {
   ]);
 
   // =========================================================
-  // CALL REJECTED
+  // CALL WAS REJECTED
   // =========================================================
 
   useEffect(() => {
@@ -835,7 +1054,7 @@ export const CallProvider = ({ children }) => {
   }, [cleanupCall]);
 
   // =========================================================
-  // MUTE / UNMUTE
+  // MUTE / UNMUTE MICROPHONE
   // =========================================================
 
   const toggleMute = useCallback(() => {
@@ -903,7 +1122,7 @@ export const CallProvider = ({ children }) => {
   );
 
   // =========================================================
-  // REMOTE USER ENDS CALL
+  // REMOTE USER ENDED CALL
   // =========================================================
 
   useEffect(() => {
@@ -929,7 +1148,7 @@ export const CallProvider = ({ children }) => {
   }, [cleanupCall]);
 
   // =========================================================
-  // CLEANUP WHEN COMPONENT UNMOUNTS
+  // CLEANUP WHEN PROVIDER UNMOUNTS
   // =========================================================
 
   useEffect(() => {
@@ -945,10 +1164,12 @@ export const CallProvider = ({ children }) => {
   return (
     <CallContext.Provider
       value={{
+        // State
         incomingCall,
         callStatus,
         isMuted,
 
+        // Actions
         startCall,
         answerCall,
         rejectCall,
@@ -956,6 +1177,7 @@ export const CallProvider = ({ children }) => {
         toggleMute,
         cleanupCall,
 
+        // Audio
         remoteAudioRef,
       }}
     >
@@ -977,13 +1199,13 @@ export const CallProvider = ({ children }) => {
       />
 
       {/* =====================================================
-          INCOMING CALL
+          INCOMING CALL POPUP
       ===================================================== */}
 
       {incomingCall && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-gray-900 p-7 text-center shadow-2xl">
-
+            {/* Caller image */}
             {incomingCall.callerImage ? (
               <img
                 src={
@@ -1001,20 +1223,21 @@ export const CallProvider = ({ children }) => {
               </div>
             )}
 
+            {/* Title */}
             <h2 className="mt-5 text-xl font-bold text-gray-900 dark:text-white">
               Incoming Call
             </h2>
 
+            {/* Caller name */}
             <p className="mt-2 text-gray-600 dark:text-gray-300">
               {incomingCall.callerName ||
                 "Student"}{" "}
               is calling...
             </p>
 
+            {/* Buttons */}
             <div className="mt-7 flex gap-4">
-
-              {/* DECLINE */}
-
+              {/* Decline */}
               <button
                 type="button"
                 onClick={rejectCall}
@@ -1023,8 +1246,7 @@ export const CallProvider = ({ children }) => {
                 Decline
               </button>
 
-              {/* ANSWER */}
-
+              {/* Answer */}
               <button
                 type="button"
                 onClick={answerCall}
@@ -1032,57 +1254,50 @@ export const CallProvider = ({ children }) => {
               >
                 Answer
               </button>
-
             </div>
           </div>
         </div>
       )}
 
       {/* =====================================================
-          OUTGOING / CONNECTED CALL
+          OUTGOING / CONNECTED CALL UI
       ===================================================== */}
 
       {(callStatus === "calling" ||
         callStatus === "connecting" ||
         callStatus === "connected") && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-
           <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-gray-900 p-7 text-center shadow-2xl">
-
+            {/* Call icon */}
             <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-green-100 text-4xl">
               📞
             </div>
 
+            {/* Title */}
             <h2 className="mt-5 text-xl font-bold text-gray-900 dark:text-white">
               Voice Call
             </h2>
 
+            {/* Status */}
             <p className="mt-2 text-gray-500 dark:text-gray-400">
               {callStatus === "calling" &&
                 "Calling..."}
 
-              {callStatus ===
-                "connecting" &&
+              {callStatus === "connecting" &&
                 "Connecting..."}
 
-              {callStatus ===
-                "connected" &&
+              {callStatus === "connected" &&
                 "Connected"}
             </p>
 
-            {/* CONTROLS */}
-
+            {/* Call controls */}
             <div className="mt-8 flex justify-center gap-4">
-
-              {/* MUTE */}
-
+              {/* Mute button */}
               {callStatus ===
                 "connected" && (
                 <button
                   type="button"
-                  onClick={
-                    toggleMute
-                  }
+                  onClick={toggleMute}
                   className={`h-14 w-14 rounded-full flex items-center justify-center transition ${
                     isMuted
                       ? "bg-red-100 text-red-600"
@@ -1106,8 +1321,7 @@ export const CallProvider = ({ children }) => {
                 </button>
               )}
 
-              {/* END */}
-
+              {/* End call */}
               <button
                 type="button"
                 onClick={() =>
@@ -1118,7 +1332,6 @@ export const CallProvider = ({ children }) => {
               >
                 ☎️
               </button>
-
             </div>
           </div>
         </div>
@@ -1128,7 +1341,7 @@ export const CallProvider = ({ children }) => {
 };
 
 // =========================================================
-// HOOK
+// USE CALL HOOK
 // =========================================================
 
 export const useCall = () => {

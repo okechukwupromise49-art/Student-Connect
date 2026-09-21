@@ -18,6 +18,7 @@ import MarketYou from './page/MarketYou'
 import MarketItem from './component/Item'
 import Messages from './page/Message'
 import ChatPage from './component/Chat'
+import Updates from './page/Update'
 
 
 
@@ -43,6 +44,7 @@ function App() {
            <Route path="/market/item/:id" element={<MarketItem />} />
            <Route path="/messages" element={<Messages />} />
            <Route path="/chat/:userId" element={<ChatPage />} />
+           <Route path="/update" element={<Updates/>} />
         </Routes>
      
     </div>
