@@ -44,7 +44,7 @@ export default function Updates() {
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
-
+/*
   useEffect(() => {
     const fetchUpdates = async () => {
       try {
@@ -95,7 +95,7 @@ export default function Updates() {
 
     fetchUpdates();
   }, []);
-
+*/
   const filtered = updates
     .filter((u) => {
       const matchCat = category === "all" || u.category === category;
