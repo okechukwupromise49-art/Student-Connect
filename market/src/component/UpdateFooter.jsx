@@ -1,7 +1,7 @@
 import React from "react";
 import {
   Home,
-  Package,
+  Radio,
   ArrowLeftCircle,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -12,8 +12,8 @@ export function UpdateFooter() {
 
   const navItems = [
     { icon: Home, label: "Home", path: "/market" },
-    { icon: Radio , label: "update", path: "/update" },
-    { icon: Navigation , label: "Map", path: "/update/map" },
+    { icon: Radio, label: "update", path: "/update" },
+    { icon: Navigation, label: "Map", path: "/update/map" },
   ];
 
   return (
