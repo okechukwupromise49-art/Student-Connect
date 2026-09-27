@@ -87,7 +87,7 @@ export default function CreateUpdate() {
       });
 
       toast.success("Update posted successfully");
-      navigate("/updates");
+      navigate("/update");
     } catch (error) {
       console.error(error);
       toast.error(
