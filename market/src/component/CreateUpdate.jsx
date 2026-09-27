@@ -83,7 +83,7 @@ export default function CreateUpdate() {
 
       await axios.post(`${API_URL}/api/updates`, formData, {
         withCredentials: true,
-        headers: { "Content-Type": "multipart/form-data" },
+        
       });
 
       toast.success("Update posted successfully");
