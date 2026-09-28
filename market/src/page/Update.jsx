@@ -70,24 +70,20 @@ export default function Updates() {
   // CURRENT USER (API first)
   // ===============================
   useEffect(() => {
-    const fetchMe = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/register/details`, {
-          withCredentials: true,
-        });
-        setCurrentUser(res.data);
-      } catch (error) {
-        try {
-          const stored = localStorage.getItem("user");
-          if (stored) setCurrentUser(JSON.parse(stored));
-        } catch {
-          setCurrentUser(null);
-        }
-      }
-    };
-
-    fetchMe();
-  }, []);
+  const fetchMe = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/register/details`, {
+        withCredentials: true,
+      });
+      console.log("ME FROM API:", res.data); // check _id in console
+      setCurrentUser(res.data);
+    } catch (error) {
+      console.error("Details error:", error);
+      setCurrentUser(null);
+    }
+  };
+  fetchMe();
+}, []);
 
   // ===============================
   // FETCH UPDATES
@@ -115,24 +111,30 @@ export default function Updates() {
   // ===============================
   // IS OWNER?
   // ===============================
-  const isOwner = (item) => {
-    if (!currentUser || !item?.author) return false;
-
-    const myId = (
-      currentUser._id ||
+  const getMyId = () => {
+  if (!currentUser) return "";
+  return String(
+    currentUser._id ||
       currentUser.id ||
-      currentUser.userId
-    )?.toString();
+      currentUser.userId ||
+      currentUser.user?._id ||
+      ""
+  );
+};
 
-    const authorId = (
-      item.author._id ||
-      item.author.id ||
-      item.author
-    )?.toString();
+const getAuthorId = (item) => {
+  if (!item?.author) return "";
+  if (typeof item.author === "object") {
+    return String(item.author._id || item.author.id || "");
+  }
+  return String(item.author);
+};
 
-    return Boolean(myId && authorId && myId === authorId);
-  };
-
+const isOwner = (item) => {
+  const myId = getMyId();
+  const authorId = getAuthorId(item);
+  return myId !== "" && authorId !== "" && myId === authorId;
+};
   // ===============================
   // DELETE YOUR POST
   // ===============================
