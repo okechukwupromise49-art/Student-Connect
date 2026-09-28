@@ -111,29 +111,51 @@ export default function Updates() {
   // ===============================
   // IS OWNER?
   // ===============================
-  const getMyId = () => {
+  const normalizeId = (value) => {
+  if (!value) return "";
+  // ObjectId, string, or object with _id
+  if (typeof value === "object") {
+    if (value._id) return normalizeId(value._id);
+    if (typeof value.toString === "function") {
+      const s = value.toString();
+      // avoid "[object Object]"
+      if (s && s !== "[object Object]") return s;
+    }
+    return "";
+  }
+  return String(value);
+};
+
+const getMyId = () => {
   if (!currentUser) return "";
-  return String(
+  return normalizeId(
     currentUser._id ||
       currentUser.id ||
       currentUser.userId ||
-      currentUser.user?._id ||
-      ""
+      currentUser.user
   );
 };
 
 const getAuthorId = (item) => {
   if (!item?.author) return "";
-  if (typeof item.author === "object") {
-    return String(item.author._id || item.author.id || "");
-  }
-  return String(item.author);
+  return normalizeId(item.author);
 };
 
 const isOwner = (item) => {
   const myId = getMyId();
   const authorId = getAuthorId(item);
-  return myId !== "" && authorId !== "" && myId === authorId;
+  const match = myId !== "" && authorId !== "" && myId === authorId;
+
+  // temporary debug — remove later
+  console.log("OWNER?", {
+    title: item?.title,
+    myId,
+    authorId,
+    match,
+    authorRaw: item?.author,
+  });
+
+  return match;
 };
   // ===============================
   // DELETE YOUR POST
@@ -331,12 +353,7 @@ const isOwner = (item) => {
               const imageUrl = getImageUrl(item);
               const owner = isOwner(item);
 
-              console.log({
-              myId: currentUser?._id || currentUser?.id,
-              author: item.author,
-              authorId: item.author?._id || item.author,
-              owner: isOwner(item),
-            });
+            
 
               return (
                 <article
