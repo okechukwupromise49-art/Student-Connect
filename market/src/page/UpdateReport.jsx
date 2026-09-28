@@ -93,13 +93,7 @@ export default function AdminUpdateReports() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading reports...
-      </div>
-    );
-  }
+   if (loading) return <PageLoader />;
 
   const pendingReports = reports.filter(
     (report) => report.status === "pending"
