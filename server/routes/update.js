@@ -373,7 +373,7 @@ export default function Updates() {
                         )}
 
                         {/* DELETE YOUR POST */}
-                        {owner && (
+                        {!owner && (
                           <button
                             type="button"
                             disabled={deletingId === item._id}
