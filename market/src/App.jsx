@@ -20,6 +20,7 @@ import Messages from './page/Message'
 import ChatPage from './component/Chat'
 import Updates from './page/Update'
 import CreateUpdate from './component/CreateUpdate'
+import AdminUpdateReports from './page/UpdateReport'
 
 
 
@@ -47,6 +48,7 @@ function App() {
            <Route path="/chat/:userId" element={<ChatPage />} />
            <Route path="/update" element={<Updates/>} />
            <Route path="/updates/create" element={<CreateUpdate/>} />
+           <Route path="/admin/update" element={<AdminUpdateReports/>} />
         </Routes>
      
     </div>
