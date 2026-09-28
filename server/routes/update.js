@@ -412,7 +412,7 @@ export default function Updates() {
                     )}
 
                     {/* Extra delete row for owners */}
-                    {owner && (
+                    {!owner && (
                       <div className="mt-3">
                         <button
                           type="button"
