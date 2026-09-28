@@ -12,6 +12,9 @@ import {
   Clock,
   Pin,
   Image as ImageIcon,
+  Trash2,
+  Flag,
+  X,
 } from "lucide-react";
 import axios from "axios";
 import API_URL from "../Api";
@@ -36,102 +39,335 @@ const categoryStyle = {
   general: "bg-gray-100 text-gray-700",
 };
 
+const REPORT_REASONS = [
+  {
+    value: "incorrect",
+    label: "Incorrect information",
+  },
+  {
+    value: "outdated",
+    label: "Outdated information",
+  },
+  {
+    value: "spam",
+    label: "Spam",
+  },
+  {
+    value: "misleading",
+    label: "Misleading information",
+  },
+  {
+    value: "other",
+    label: "Other",
+  },
+];
+
 export default function Updates() {
   const navigate = useNavigate();
 
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
+
   const [previewImage, setPreviewImage] = useState(null);
 
-  useEffect(() => {
-    const fetchUpdates = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get(`${API_URL}/api/updates`, {
-          withCredentials: true,
-        });
-        setUpdates(res.data || []);
-      } catch (error) {
-        console.error(error);
-        // Demo: text + image examples
-        setUpdates([
-          {
-            _id: "1",
-            title: "UniAbuja Scholarship Portal Now Open",
-            body: "Applications for the 2026 merit scholarship are open. Deadline is October 15.",
-            category: "scholarship",
-            pinned: true,
-            image: null, // or a URL string
-            author: { full_name: "Admin", profileImage: null },
-            createdAt: new Date().toISOString(),
-          },
-          {
-            _id: "2",
-            title: "Faculty of Science Mid-Semester Break",
-            body: "Classes resume on Monday. Submit all practical reports before Friday.",
-            category: "school",
-            pinned: false,
-            image: null,
-            author: { full_name: "Dean Office", profileImage: null },
-            createdAt: new Date().toISOString(),
-          },
-          {
-            _id: "3",
-            title: "Internship Opportunities – MTN & Andela",
-            body: "Campus career office is collecting CVs for tech internships.",
-            category: "career",
-            pinned: false,
-            image: null,
-            author: { full_name: "Career Unit", profileImage: null },
-            createdAt: new Date().toISOString(),
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Delete state
+  const [deletingId, setDeletingId] = useState(null);
 
+  // Report state
+  const [reportingUpdate, setReportingUpdate] = useState(null);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+
+  // Logged in user
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // ===============================
+  // GET CURRENT USER
+  // ===============================
+
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem("user");
+
+      if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to load current user:", error);
+    }
+  }, []);
+
+  // ===============================
+  // FETCH UPDATES
+  // ===============================
+
+  const fetchUpdates = async () => {
+    try {
+      setLoading(true);
+
+      const res = await axios.get(`${API_URL}/api/updates`, {
+        withCredentials: true,
+      });
+
+      setUpdates(res.data || []);
+    } catch (error) {
+      console.error("Fetch updates error:", error);
+
+      // Demo data
+      setUpdates([
+        {
+          _id: "1",
+          title: "UniAbuja Scholarship Portal Now Open",
+          body: "Applications for the 2026 merit scholarship are open. Deadline is October 15.",
+          category: "scholarship",
+          pinned: true,
+          image: null,
+          author: {
+            _id: "demo-author-1",
+            full_name: "Admin",
+            profileImage: null,
+          },
+          createdAt: new Date().toISOString(),
+        },
+        {
+          _id: "2",
+          title: "Faculty of Science Mid-Semester Break",
+          body: "Classes resume on Monday. Submit all practical reports before Friday.",
+          category: "school",
+          pinned: false,
+          image: null,
+          author: {
+            _id: "demo-author-2",
+            full_name: "Dean Office",
+            profileImage: null,
+          },
+          createdAt: new Date().toISOString(),
+        },
+        {
+          _id: "3",
+          title: "Internship Opportunities – MTN & Andela",
+          body: "Campus career office is collecting CVs for tech internships.",
+          category: "career",
+          pinned: false,
+          image: null,
+          author: {
+            _id: "demo-author-3",
+            full_name: "Career Unit",
+            profileImage: null,
+          },
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchUpdates();
   }, []);
 
+  // ===============================
+  // CHECK POST OWNER
+  // ===============================
+
+  const isOwner = (item) => {
+    if (!currentUser || !item?.author?._id) {
+      return false;
+    }
+
+    const currentUserId =
+      currentUser._id ||
+      currentUser.id ||
+      currentUser.userId;
+
+    return (
+      currentUserId?.toString() ===
+      item.author._id?.toString()
+    );
+  };
+
+  // ===============================
+  // DELETE UPDATE
+  // ===============================
+
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this update?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setDeletingId(id);
+
+      await axios.delete(`${API_URL}/api/updates/${id}`, {
+        withCredentials: true,
+      });
+
+      setUpdates((prev) =>
+        prev.filter((item) => item._id !== id)
+      );
+
+      alert("Update deleted successfully.");
+    } catch (error) {
+      console.error("Delete update error:", error);
+
+      alert(
+        error.response?.data?.message ||
+          "Failed to delete update"
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // ===============================
+  // OPEN REPORT MODAL
+  // ===============================
+
+  const openReportModal = (item) => {
+    setReportingUpdate(item);
+    setReportReason("");
+    setReportDescription("");
+  };
+
+  // ===============================
+  // CLOSE REPORT MODAL
+  // ===============================
+
+  const closeReportModal = () => {
+    if (reportLoading) return;
+
+    setReportingUpdate(null);
+    setReportReason("");
+    setReportDescription("");
+  };
+
+  // ===============================
+  // REPORT UPDATE
+  // ===============================
+
+  const handleReport = async () => {
+    if (!reportReason) {
+      alert("Please select a reason for reporting.");
+      return;
+    }
+
+    if (!reportingUpdate?._id) {
+      return;
+    }
+
+    try {
+      setReportLoading(true);
+
+      await axios.post(
+        `${API_URL}/api/update-reports/${reportingUpdate._id}`,
+        {
+          reason: reportReason,
+          description: reportDescription.trim(),
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+      alert(
+        "Report submitted successfully. An admin will review this update."
+      );
+
+      closeReportModal();
+    } catch (error) {
+      console.error("Report update error:", error);
+
+      alert(
+        error.response?.data?.message ||
+          "Failed to submit report"
+      );
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  // ===============================
+  // FILTER UPDATES
+  // ===============================
+
   const filtered = updates
     .filter((u) => {
-      const matchCat = category === "all" || u.category === category;
+      const matchCat =
+        category === "all" ||
+        u.category === category;
+
       const q = search.toLowerCase().trim();
+
       const matchSearch =
         !q ||
         u.title?.toLowerCase().includes(q) ||
         u.body?.toLowerCase().includes(q);
+
       return matchCat && matchSearch;
     })
     .sort((a, b) => {
       if (a.pinned && !b.pinned) return -1;
+
       if (!a.pinned && b.pinned) return 1;
-      return new Date(b.createdAt) - new Date(a.createdAt);
+
+      return (
+        new Date(b.createdAt) -
+        new Date(a.createdAt)
+      );
     });
+
+  // ===============================
+  // FORMAT DATE
+  // ===============================
 
   const formatDate = (date) => {
     if (!date) return "";
-    return new Date(date).toLocaleDateString(undefined, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+
+    return new Date(date).toLocaleDateString(
+      undefined,
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
-  // Support image as string URL or files[0].url
-  const getImageUrl = (item) =>
-    item.image || item.imageUrl || item.files?.[0]?.url || null;
+  // ===============================
+  // IMAGE URL
+  // ===============================
 
-  if (loading) return <PageLoader />;
+  const getImageUrl = (item) =>
+    item.image ||
+    item.imageUrl ||
+    item.files?.[0]?.url ||
+    null;
+
+  // ===============================
+  // LOADING
+  // ===============================
+
+  if (loading) {
+    return <PageLoader />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 pb-28">
-      {/* Header */}
+
+      {/* =================================
+          HEADER
+      ================================= */}
+
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-100">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
+
           <button
             onClick={() => navigate(-1)}
             className="p-2 rounded-xl hover:bg-gray-100 text-gray-600"
@@ -140,7 +376,10 @@ export default function Updates() {
           </button>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-gray-900">Campus Updates</h1>
+            <h1 className="text-xl font-bold text-gray-900">
+              Campus Updates
+            </h1>
+
             <p className="text-xs text-gray-500">
               School · Scholarships · Career · News
             </p>
@@ -151,37 +390,60 @@ export default function Updates() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700"
           >
             <Plus size={16} />
-            <span className="hidden sm:inline">Post</span>
+
+            <span className="hidden sm:inline">
+              Post
+            </span>
           </button>
+
         </div>
       </header>
 
+      {/* =================================
+          MAIN
+      ================================= */}
+
       <main className="max-w-3xl mx-auto px-4 py-5">
-        {/* Search */}
+
+        {/* SEARCH */}
+
         <div className="relative mb-4">
+
           <Search
             className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
             size={18}
           />
+
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
             placeholder="Search updates..."
             className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
           />
+
         </div>
 
-        {/* Categories */}
+        {/* =================================
+            CATEGORIES
+        ================================= */}
+
         <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
-            const active = category === cat.id;
+
+            const active =
+              category === cat.id;
 
             return (
               <button
                 key={cat.id}
-                onClick={() => setCategory(cat.id)}
+                onClick={() =>
+                  setCategory(cat.id)
+                }
                 className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                   active
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
@@ -189,127 +451,424 @@ export default function Updates() {
                 }`}
               >
                 <Icon size={16} />
+
                 {cat.label}
               </button>
             );
           })}
+
         </div>
 
-        {/* List */}
+        {/* =================================
+            EMPTY STATE
+        ================================= */}
+
         {filtered.length === 0 ? (
           <div className="bg-white rounded-3xl border border-gray-100 p-12 text-center shadow-sm">
+
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-50 flex items-center justify-center">
-              <Megaphone className="text-indigo-400" size={28} />
+              <Megaphone
+                className="text-indigo-400"
+                size={28}
+              />
             </div>
-            <h3 className="font-bold text-gray-900">No updates yet</h3>
+
+            <h3 className="font-bold text-gray-900">
+              No updates yet
+            </h3>
+
             <p className="text-sm text-gray-500 mt-2">
-              Check back for school, scholarship, and career news.
+              Check back for school, scholarship,
+              and career news.
             </p>
+
           </div>
         ) : (
+
+          /* =================================
+              UPDATE LIST
+          ================================= */
+
           <div className="space-y-4">
+
             {filtered.map((item) => {
-              const imageUrl = getImageUrl(item);
+              const imageUrl =
+                getImageUrl(item);
+
+              const owner =
+                isOwner(item);
 
               return (
                 <article
                   key={item._id}
                   className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
-                  {/* Image (if any) */}
+
+                  {/* =================================
+                      IMAGE
+                  ================================= */}
+
                   {imageUrl && (
                     <button
                       type="button"
-                      onClick={() => setPreviewImage(imageUrl)}
+                      onClick={() =>
+                        setPreviewImage(
+                          imageUrl
+                        )
+                      }
                       className="block w-full"
                     >
                       <div className="relative w-full aspect-[16/10] bg-gray-100">
+
                         <img
                           src={imageUrl}
                           alt={item.title}
                           className="w-full h-full object-cover"
                         />
+
                       </div>
                     </button>
                   )}
 
+                  {/* =================================
+                      CONTENT
+                  ================================= */}
+
                   <div className="p-5">
+
+                    {/* TOP ROW */}
+
                     <div className="flex items-start justify-between gap-3 mb-3">
+
+                      {/* CATEGORY */}
+
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide ${
-                          categoryStyle[item.category] ||
+                          categoryStyle[
+                            item.category
+                          ] ||
                           categoryStyle.general
                         }`}
                       >
                         {item.category}
                       </span>
 
-                      <div className="flex items-center gap-2">
+                      {/* ACTIONS */}
+
+                      <div className="flex items-center gap-1">
+
+                        {/* IMAGE INDICATOR */}
+
                         {imageUrl && (
-                          <span className="text-gray-300">
+                          <span className="text-gray-300 p-1">
                             <ImageIcon size={14} />
                           </span>
                         )}
+
+                        {/* PINNED */}
+
                         {item.pinned && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 px-1">
                             <Pin size={12} />
                             Pinned
                           </span>
                         )}
+
+                        {/* AUTHOR DELETE */}
+
+                        {owner && (
+                          <button
+                            type="button"
+                            disabled={
+                              deletingId ===
+                              item._id
+                            }
+                            onClick={() =>
+                              handleDelete(
+                                item._id
+                              )
+                            }
+                            className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                            title="Delete update"
+                          >
+                            <Trash2
+                              size={16}
+                            />
+                          </button>
+                        )}
+
+                        {/* REPORT */}
+
+                        {!owner && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openReportModal(
+                                item
+                              )
+                            }
+                            className="p-2 rounded-lg text-gray-400 hover:text-orange-600 hover:bg-orange-50 transition"
+                            title="Report update"
+                          >
+                            <Flag size={16} />
+                          </button>
+                        )}
+
                       </div>
                     </div>
+
+                    {/* TITLE */}
 
                     <h2 className="text-lg font-bold text-gray-900 leading-snug">
                       {item.title}
                     </h2>
 
-                    {/* Text */}
+                    {/* BODY */}
+
                     {item.body && (
                       <p className="text-sm text-gray-600 mt-2 leading-relaxed whitespace-pre-line">
                         {item.body}
                       </p>
                     )}
 
+                    {/* AUTHOR */}
+
                     <div className="flex items-center gap-3 mt-4 pt-3 border-t border-gray-50">
+
                       <img
-                        src={item.author?.profileImage || studySpher}
-                        alt={item.author?.full_name || "Admin"}
+                        src={
+                          item.author
+                            ?.profileImage ||
+                          studySpher
+                        }
+                        alt={
+                          item.author
+                            ?.full_name ||
+                          "Admin"
+                        }
                         className="w-8 h-8 rounded-full object-cover"
                       />
+
                       <div className="min-w-0 flex-1">
+
                         <p className="text-xs font-semibold text-gray-700 truncate">
-                          {item.author?.full_name || "Campus Admin"}
+                          {item.author
+                            ?.full_name ||
+                            "Campus Admin"}
                         </p>
+
                         <p className="text-[11px] text-gray-400 flex items-center gap-1">
+
                           <Clock size={11} />
-                          {formatDate(item.createdAt)}
+
+                          {formatDate(
+                            item.createdAt
+                          )}
+
                         </p>
+
                       </div>
+
                     </div>
+
                   </div>
+
                 </article>
               );
             })}
+
           </div>
         )}
+
       </main>
 
-      {/* Fullscreen image preview */}
+      {/* =================================
+          FULLSCREEN IMAGE PREVIEW
+      ================================= */}
+
       {previewImage && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onClick={() => setPreviewImage(null)}
+          onClick={() =>
+            setPreviewImage(null)
+          }
         >
+
+          <button
+            type="button"
+            onClick={() =>
+              setPreviewImage(null)
+            }
+            className="absolute top-5 right-5 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+          >
+            <X size={22} />
+          </button>
+
           <img
             src={previewImage}
             alt="Update"
             className="max-w-full max-h-[90vh] rounded-2xl object-contain"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           />
+
         </div>
       )}
 
-      <UpdateFooter/>
+      {/* =================================
+          REPORT MODAL
+      ================================= */}
+
+      {reportingUpdate && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={closeReportModal}
+        >
+
+          <div
+            className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+
+            {/* MODAL HEADER */}
+
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">
+                  Report Update
+                </h2>
+
+                <p className="text-xs text-gray-500 mt-1">
+                  Help us review incorrect information.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeReportModal}
+                disabled={reportLoading}
+                className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 disabled:opacity-50"
+              >
+                <X size={20} />
+              </button>
+
+            </div>
+
+            {/* MODAL BODY */}
+
+            <div className="p-5">
+
+              <p className="text-sm font-semibold text-gray-700 mb-3">
+                Why are you reporting this?
+              </p>
+
+              <div className="space-y-2">
+
+                {REPORT_REASONS.map(
+                  (reason) => (
+                    <label
+                      key={reason.value}
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${
+                        reportReason ===
+                        reason.value
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+
+                      <input
+                        type="radio"
+                        name="reportReason"
+                        value={
+                          reason.value
+                        }
+                        checked={
+                          reportReason ===
+                          reason.value
+                        }
+                        onChange={(e) =>
+                          setReportReason(
+                            e.target.value
+                          )
+                        }
+                        className="accent-indigo-600"
+                      />
+
+                      <span className="text-sm text-gray-700">
+                        {reason.label}
+                      </span>
+
+                    </label>
+                  )
+                )}
+
+              </div>
+
+              {/* DESCRIPTION */}
+
+              <textarea
+                value={reportDescription}
+                onChange={(e) =>
+                  setReportDescription(
+                    e.target.value
+                  )
+                }
+                placeholder="Tell us more about the problem (optional)..."
+                maxLength={500}
+                rows={4}
+                className="w-full mt-4 p-3 rounded-xl border border-gray-200 text-sm text-gray-700 outline-none resize-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+              />
+
+              <p className="text-[11px] text-gray-400 text-right mt-1">
+                {reportDescription.length}/500
+              </p>
+
+            </div>
+
+            {/* MODAL FOOTER */}
+
+            <div className="flex gap-3 p-5 pt-0">
+
+              <button
+                type="button"
+                onClick={closeReportModal}
+                disabled={reportLoading}
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleReport}
+                disabled={
+                  reportLoading ||
+                  !reportReason
+                }
+                className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {reportLoading
+                  ? "Submitting..."
+                  : "Submit Report"}
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* =================================
+          FOOTER
+      ================================= */}
+
+      <UpdateFooter />
+
     </div>
   );
 }

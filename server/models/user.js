@@ -45,6 +45,12 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
     },
 
+    role: {
+      type: String,
+      enum: ["student", "admin"],
+      default: "student",
+    },
+
     // =========================
     // FOLLOW SYSTEM
     // =========================

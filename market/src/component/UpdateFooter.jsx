@@ -12,7 +12,6 @@ export function UpdateFooter() {
   const navigate = useNavigate();
 
   const navItems = [
-    { icon: Home, label: "Home", path: "/market" },
     { icon: Radio, label: "update", path: "/update" },
     { icon: Navigation, label: "Map", path: "/update/map" },
   ];
