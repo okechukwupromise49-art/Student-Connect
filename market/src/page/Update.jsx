@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Search,
@@ -252,7 +252,29 @@ const isOwner = (item) => {
     });
 
     
+const renderTextWithLinks = (text) => {
+  if (!text) return null;
 
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+  return text.split(urlRegex).map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline break-all"
+        >
+          {part}
+        </a>
+      );
+    }
+
+    return <span key={index}>{part}</span>;
+  });
+};
    
   const formatDate = (date) => {
     if (!date) return "";
@@ -435,8 +457,8 @@ const isOwner = (item) => {
                     </h2>
 
                     {item.body && (
-                      <p className="text-sm text-gray-600 mt-2 leading-relaxed whitespace-pre-line">
-                        {item.body}
+                      <p className="text-sm text-gray-600 mt-2 leading-relaxed whitespace-pre-line whitespace-pre-wrap">
+                         {renderTextWithLinks(item.body)}
                       </p>
                     )}
 
@@ -458,20 +480,27 @@ const isOwner = (item) => {
                     )}
 
                     <div className="flex items-center gap-3 mt-4 pt-3 border-t border-gray-50">
-                      <img
-                        src={item.author?.profileImage || studySpher}
-                        alt={item.author?.full_name || "Admin"}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-gray-700 truncate">
-                          {item.author?.full_name || "Campus Admin"}
-                        </p>
-                        <p className="text-[11px] text-gray-400 flex items-center gap-1">
-                          <Clock size={11} />
-                          {formatDate(item.createdAt)}
-                        </p>
-                      </div>
+                      <Link
+                          to={`/profile/${item.author?._id}`}
+                          className="flex items-center gap-3 mt-4 pt-3 border-t border-gray-50 hover:bg-gray-50 rounded-xl p-2 -mx-2 transition"
+                        >
+                          <img
+                            src={item.author?.profileImage || studySpher}
+                            alt={item.author?.full_name || "Admin"}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-gray-700 truncate">
+                              {item.author?.full_name || "Campus Admin"}
+                            </p>
+
+                            <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                              <Clock size={11} />
+                              {formatDate(item.createdAt)}
+                            </p>
+                          </div>
+                        </Link>
                     </div>
                   </div>
                 </article>
