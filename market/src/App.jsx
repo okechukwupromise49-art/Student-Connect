@@ -21,6 +21,7 @@ import ChatPage from './component/Chat'
 import Updates from './page/Update'
 import CreateUpdate from './component/CreateUpdate'
 import AdminUpdateReports from './page/UpdateReport'
+import Groups from './page/Groups'
 
 
 
@@ -49,6 +50,7 @@ function App() {
            <Route path="/update" element={<Updates/>} />
            <Route path="/updates/create" element={<CreateUpdate/>} />
            <Route path="/admin/update" element={<AdminUpdateReports/>} />
+           <Route path="/groups" element={<Groups/>} />
         </Routes>
      
     </div>
