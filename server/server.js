@@ -61,7 +61,7 @@ app.use("/api/market/orders", orderRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/updates", updateRoutes);
 app.use("/api/update-reports", updateReportRoutes);
-app.use("/api/group", groupRoutes);
+app.use("/api/groups", groupRoutes);
 
 app.get("/", (req, res) => {
   res.send("StudyConnect API is running...");
