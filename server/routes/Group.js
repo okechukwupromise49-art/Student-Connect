@@ -268,4 +268,28 @@ router.post("/:id/read", auth, async (req, res) => {
   }
 });
 
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    const userId = req.user.id.toString();
+    const isCreator = group.creator.toString() === userId;
+    const isAdmin = group.admins?.some((a) => a.toString() === userId);
+
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({ message: "Only admin can delete group" });
+    }
+
+    await GroupMessage.deleteMany({ group: group._id });
+    await group.deleteOne();
+
+    res.json({ message: "Group deleted" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete group" });
+  }
+});
+
 module.exports = router;
