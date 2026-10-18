@@ -1,8 +1,5 @@
 // models/GroupMessage.js
-const mongoose = require("mongoose");
-
-
-const mongoose = require("mongoose");
+const mongoose = require("mongoose")
 
 const groupMessageSchema = new mongoose.Schema(
   {
