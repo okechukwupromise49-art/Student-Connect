@@ -199,5 +199,44 @@ router.post("/:id/messages", auth, async (req, res) => {
     res.status(500).json({ message: "Failed to send message" });
   }
 });
+router.post("/:id/read", auth, async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.id);
+
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    const userId = String(req.user.id);
+
+    const isMember = group.members.some(
+      (member) => String(member) === userId
+    );
+
+    if (!isMember) {
+      return res.status(403).json({
+        message: "You are not a member of this group",
+      });
+    }
+
+    await GroupMessage.updateMany(
+      {
+        group: group._id,
+        sender: { $ne: req.user.id },
+        readBy: { $ne: req.user.id },
+      },
+      {
+        $addToSet: { readBy: req.user.id },
+      }
+    );
+
+    return res.json({ message: "Messages marked as read" });
+  } catch (error) {
+    console.error("Mark group messages as read error:", error);
+    return res.status(500).json({
+      message: "Failed to mark messages as read",
+    });
+  }
+});
 
 module.exports = router;

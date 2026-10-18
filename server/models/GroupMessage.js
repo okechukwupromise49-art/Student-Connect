@@ -1,6 +1,9 @@
 // models/GroupMessage.js
 const mongoose = require("mongoose");
 
+
+const mongoose = require("mongoose");
+
 const groupMessageSchema = new mongoose.Schema(
   {
     group: {
@@ -8,16 +11,26 @@ const groupMessageSchema = new mongoose.Schema(
       ref: "Group",
       required: true,
     },
+
     sender: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+
     text: {
       type: String,
       required: true,
       trim: true,
     },
+
+    // Users who have read this message
+    readBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true }
 );
