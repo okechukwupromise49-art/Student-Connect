@@ -15,6 +15,7 @@ export function MessageFooter() {
 
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [groupUnreadCount, setGroupUnreadCount] = useState(0);
 
   // ==========================================
   // GET CURRENT USER
@@ -76,6 +77,41 @@ export function MessageFooter() {
 
     fetchUnreadCount();
   }, [user?._id, location.pathname]);
+
+  useEffect(() => {
+  if (!user?._id) return;
+
+
+  //group count
+
+  const fetchGroupUnreadCount = async () => {
+    try {
+      const res = await axios.get(
+        `${API_URL}/api/groups/my`,
+        { withCredentials: true }
+      );
+
+      const groups = Array.isArray(res.data)
+        ? res.data
+        : [];
+
+      const totalUnread = groups.reduce(
+        (total, group) =>
+          total + (Number(group.unreadCount) || 0),
+        0
+      );
+
+      setGroupUnreadCount(totalUnread);
+    } catch (error) {
+      console.log(
+        "Failed to get unread group messages:",
+        error.response?.data || error.message
+      );
+    }
+  };
+
+  fetchGroupUnreadCount();
+}, [user?._id, location.pathname]);
 
   // ==========================================
   // SOCKET.IO - REAL-TIME UNREAD MESSAGES
@@ -204,6 +240,8 @@ export function MessageFooter() {
             const isMessage =
               item.path === "/messages";
 
+              const isGroup = item.path === "/groups";
+
             return (
               <Link
                 key={item.path}
@@ -235,6 +273,15 @@ export function MessageFooter() {
                           : unreadCount}
                       </span>
                     )}
+
+                    {/* UNREAD GROUP BADGE */}
+          {isGroup && groupUnreadCount > 0 && (
+            <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-gray-900">
+              {groupUnreadCount > 99
+                ? "99+"
+                : groupUnreadCount}
+            </span>
+          )}
 
                 </div>
 

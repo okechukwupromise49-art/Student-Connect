@@ -38,18 +38,41 @@ router.post("/", auth, async (req, res) => {
 // ===============================
 // GET MY GROUPS
 // ===============================
+
 router.get("/my", auth, async (req, res) => {
   try {
-    const groups = await Group.find({ members: req.user.id })
+    const userId = req.user.id;
+
+    const groups = await Group.find({ members: userId })
       .populate("creator", "full_name profileImage")
       .populate("members", "full_name profileImage")
-      .sort({ updatedAt: -1 });
+      .sort({ updatedAt: -1 })
+      .lean();
 
-    res.json(groups);
+    const groupsWithUnreadCount = await Promise.all(
+      groups.map(async (group) => {
+        const unreadCount = await GroupMessage.countDocuments({
+          group: group._id,
+          sender: { $ne: userId },
+          readBy: { $ne: userId },
+        });
+
+        return {
+          ...group,
+          unreadCount,
+        };
+      })
+    );
+
+    res.json(groupsWithUnreadCount);
   } catch (error) {
-    res.status(500).json({ message: "Failed to load groups" });
+    console.error("Load my groups error:", error);
+    res.status(500).json({
+      message: "Failed to load groups",
+    });
   }
 });
+
 
 // ===============================
 // GET / DISCOVER GROUPS
