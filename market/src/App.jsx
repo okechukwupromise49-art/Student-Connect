@@ -24,6 +24,7 @@ import AdminUpdateReports from './page/UpdateReport'
 import Groups from './page/Groups'
 import CreateGroup from './component/CreateGroup'
 import GroupChat from './component/GroupChat'
+import AiChat from './page/AiChat'
 
 
 
