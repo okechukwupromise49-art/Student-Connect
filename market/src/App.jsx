@@ -55,6 +55,7 @@ function App() {
            <Route path="/groups" element={<Groups/>} />
            <Route path="/groups/create" element={<CreateGroup/>} />
            <Route path="/groups/:id/chat" element={<GroupChat />} />
+           <Route path="/ai-chat" element={<AiChat />} />
         </Routes>
      
     </div>

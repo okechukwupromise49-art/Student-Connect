@@ -6,6 +6,7 @@ import {
   Search,
   MessageCircle,
   Users,
+  Sparkles,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -401,6 +402,31 @@ export default function Messages() {
           </span>
 
         </div>
+        {/* ================= AI ASSISTANT ================= */}
+            <button
+              type="button"
+              onClick={() => navigate("/ai-chat")}
+              className="w-full mb-5 p-4 rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 text-left shadow-lg shadow-indigo-200/50 hover:opacity-95 transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+                  <Sparkles className="text-white" size={22} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-white font-bold text-sm sm:text-base">
+                    Campus AI
+                  </p>
+                  <p className="text-indigo-100 text-xs sm:text-sm truncate">
+                    What&apos;s on your mind? Ask anything…
+                  </p>
+                </div>
+
+                <span className="text-white/80 text-xs font-semibold px-3 py-1.5 rounded-full bg-white/10 shrink-0">
+                  Ask
+                </span>
+              </div>
+            </button>
 
         {/* ================= EMPTY STATE ================= */}
         {filtered.length === 0 ? (
