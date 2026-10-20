@@ -20,6 +20,9 @@ const updateReportRoutes = require("./routes/updateReport");
 const groupRoutes = require("./routes/Group");
 const aiRoutes = require("./routes/ai");
 
+
+
+
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const app = express();
