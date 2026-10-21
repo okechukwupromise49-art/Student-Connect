@@ -23,20 +23,24 @@ router.post("/chat", auth, async (req, res) => {
       });
     }
 
-    // Load the current Google Gen AI SDK in this CommonJS backend.
+    // Initialize the Google Gen AI SDK.
     const { GoogleGenAI } = await import("@google/genai");
+
     const ai = new GoogleGenAI({
       apiKey: apiKey.trim(),
     });
 
-    const systemPrompt = `You are Campus AI for Student Connect,
+    const systemPrompt = `
+You are Campus AI for Student Connect,
 a Nigerian campus app for students.
 
-Help with studies, exams, campus life, scholarships, career tips,
-and using the app, including messages, groups, marketplace,
-updates, and finding friends.
+Help with studies, exams, campus life, scholarships,
+career tips, and using the app, including messages,
+groups, marketplace, updates, and finding friends.
 
-Be friendly, practical, and concise. If you are unsure, say so.`;
+Be friendly, practical, and concise.
+If you are unsure, say so.
+`;
 
     const recentHistory = Array.isArray(history)
       ? history
@@ -62,97 +66,125 @@ ${recentHistory || "(none)"}
 User: ${message.trim()}
 AI:`;
 
-    // Try the primary model, then fall back to other supported models.
-const modelNames = [
-  "gemini-3.8-flash",
-  "gemini-3.7-flash",
-  "gemini-3.6-flash",
-];
+    // Try the primary model and then fallback models.
+    const modelNames = [
+      "gemini-3.8-flash",
+      "gemini-3.6-flash",
+      "gemini-3.5-flash-lite",
+    ];
 
-let reply = "";
-let lastError = null;
+    let reply = "";
+    let lastError = null;
 
-for (const modelName of modelNames) {
-  // Allow two attempts per model.
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-      });
+    for (const modelName of modelNames) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          // Correct API for @google/genai.
+          const result = await ai.models.generateContent({
+            model: modelName,
+            contents: fullPrompt,
+          });
 
-      const result = await model.generateContent(fullPrompt);
+          // Correct response format for @google/genai.
+          reply = result?.text || "";
 
-      reply = result?.response?.text?.() || "";
+          if (!reply.trim()) {
+            throw new Error(
+              `Empty response from ${modelName}`
+            );
+          }
 
-      if (!reply.trim()) {
-        throw new Error("Gemini returned an empty response");
+          console.log(
+            `Campus AI responded using ${modelName}`
+          );
+
+          break;
+        } catch (error) {
+          lastError = error;
+
+          const status = Number(
+            error?.status || error?.code || 0
+          );
+
+          const errorMessage = String(
+            error?.message || ""
+          );
+
+          const temporaryError =
+            [429, 500, 502, 503, 504].includes(status) ||
+            /UNAVAILABLE|high demand|temporarily unavailable/i.test(
+              errorMessage
+            );
+
+          const missingModel =
+            status === 404 ||
+            /model.*not found|model.*unsupported/i.test(
+              errorMessage
+            );
+
+          console.error(
+            `Campus AI error: ${modelName}, attempt ${
+              attempt + 1
+            }, status ${status || "unknown"}:`,
+            errorMessage
+          );
+
+          // Invalid API keys and other permanent errors
+          // should not be retried against every model.
+          if (!temporaryError && !missingModel) {
+            throw error;
+          }
+
+          // Retry temporary failures once.
+          if (temporaryError && attempt === 0) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1200)
+            );
+          } else {
+            // Move to the next model.
+            break;
+          }
+        }
       }
 
-      console.log(`Campus AI responded using ${modelName}`);
-
-      break;
-    } catch (error) {
-      lastError = error;
-
-      const status = Number(
-        error?.status || error?.response?.status
-      );
-
-      const errorMessage = String(error?.message || "");
-
-      const temporaryError =
-        [429, 500, 502, 503, 504].includes(status) ||
-        /UNAVAILABLE|high demand|temporarily unavailable/i.test(
-          errorMessage
-        );
-
-      const missingModel =
-        status === 404 ||
-        /model.*not found|model.*unsupported/i.test(
-          errorMessage
-        );
-
-      console.error(
-        `Campus AI: ${modelName}, attempt ${attempt + 1}, status ${status || "unknown"}:`,
-        errorMessage
-      );
-
-      // Do not retry errors such as invalid credentials.
-      if (!temporaryError && !missingModel) {
-        throw error;
-      }
-
-      // Retry temporary failures once after a short delay.
-      if (temporaryError && attempt === 0) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, 1200)
-        );
-      } else {
-        // Try the next model.
+      if (reply.trim()) {
         break;
       }
     }
-  }
 
-  if (reply.trim()) {
-    break;
-  }
-}
+    if (!reply.trim()) {
+      throw lastError || new Error(
+        "All Gemini models failed"
+      );
+    }
 
-if (!reply.trim()) {
-  throw lastError || new Error("All Gemini models failed");
-}
-
-return res.json({ reply });
+    return res.json({ reply });
   } catch (error) {
     console.error("AI chat error:", {
       message: error?.message,
-      status: error?.status,
-      details: error?.details,
+      status: error?.status || error?.code,
     });
 
+    const status = Number(
+      error?.status || error?.code || 0
+    );
+
+    const temporaryError =
+      [429, 500, 502, 503, 504].includes(status) ||
+      /UNAVAILABLE|high demand|temporarily unavailable/i.test(
+        String(error?.message || "")
+      );
+
+    if (temporaryError) {
+      return res.status(503).json({
+        message:
+          "Campus AI is busy right now. Please try again shortly.",
+      });
+    }
+
     return res.status(500).json({
-      message: "AI failed to respond. Check the backend logs.",
+      message:
+        "AI failed to respond. Check the backend logs.",
     });
   }
 });
