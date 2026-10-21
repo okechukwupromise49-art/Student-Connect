@@ -62,22 +62,88 @@ ${recentHistory || "(none)"}
 User: ${message.trim()}
 AI:`;
 
-    const result = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: fullPrompt,
-    });
+    // Try the primary model, then fall back to other supported models.
+const modelNames = [
+  "gemini-3.8-flash",
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+];
 
-    const reply = result.text || "";
+let reply = "";
+let lastError = null;
 
-    if (!reply.trim()) {
-      console.error("Gemini returned an empty response");
-
-      return res.status(502).json({
-        message: "The AI returned an empty response. Please try again.",
+for (const modelName of modelNames) {
+  // Allow two attempts per model.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
       });
-    }
 
-    return res.json({ reply });
+      const result = await model.generateContent(fullPrompt);
+
+      reply = result?.response?.text?.() || "";
+
+      if (!reply.trim()) {
+        throw new Error("Gemini returned an empty response");
+      }
+
+      console.log(`Campus AI responded using ${modelName}`);
+
+      break;
+    } catch (error) {
+      lastError = error;
+
+      const status = Number(
+        error?.status || error?.response?.status
+      );
+
+      const errorMessage = String(error?.message || "");
+
+      const temporaryError =
+        [429, 500, 502, 503, 504].includes(status) ||
+        /UNAVAILABLE|high demand|temporarily unavailable/i.test(
+          errorMessage
+        );
+
+      const missingModel =
+        status === 404 ||
+        /model.*not found|model.*unsupported/i.test(
+          errorMessage
+        );
+
+      console.error(
+        `Campus AI: ${modelName}, attempt ${attempt + 1}, status ${status || "unknown"}:`,
+        errorMessage
+      );
+
+      // Do not retry errors such as invalid credentials.
+      if (!temporaryError && !missingModel) {
+        throw error;
+      }
+
+      // Retry temporary failures once after a short delay.
+      if (temporaryError && attempt === 0) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1200)
+        );
+      } else {
+        // Try the next model.
+        break;
+      }
+    }
+  }
+
+  if (reply.trim()) {
+    break;
+  }
+}
+
+if (!reply.trim()) {
+  throw lastError || new Error("All Gemini models failed");
+}
+
+return res.json({ reply });
   } catch (error) {
     console.error("AI chat error:", {
       message: error?.message,
